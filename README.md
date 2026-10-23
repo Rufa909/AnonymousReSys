@@ -84,13 +84,13 @@ Hệ thống đề xuất khai thác ưu điểm của công nghệ **Blockchain
 
 1. **Smart Contract (Backend trên Chain):**
    - **Solidity (v0.8.0+):** Ngôn ngữ viết Hợp đồng thông minh.
-   - **Remix IDE / Hardhat:** Môi trường phát triển, kiểm thử và deploy contract.
+   - **Remix IDE :** Môi trường phát triển, kiểm thử và deploy contract.
 2. **Blockchain Network:**
-   - **Ethereum Testnet (Sepolia) / Polygon Amoy:** Mạng thử nghiệm miễn phí.
+   - **Ethereum Testnet (Sepolia):** Mạng thử nghiệm miễn phí.
 3. **Thư viện Web3:**
    - **Ethers.js (v5/v6) hoặc Web3.js:** Cầu nối tương tác giữa JavaScript trên Web và Smart Contract.
 4. **Giao diện Web (Frontend):**
-   - **React.js / HTML5 + Tailwind CSS:** Xây dựng giao diện ứng dụng Web3.
+   - **React.js:** Xây dựng giao diện ứng dụng Web3.
 5. **Ví Điện tử (Identity Provider):**
    - **MetaMask Extension:** Quản lý khóa bí mật, thực hiện ký và xác nhận giao dịch.
 
@@ -206,26 +206,5 @@ contract DecentralizedEduEvaluation {
         return (courses[_courseId].totalScore * 10) / courses[_courseId].reviewCount; // Trả về dạng x10 để lấy số thập phân
     }
 }
-```
 
----
-
-## 7. KẾ HOẠCH DEMO BẢO VỆ ĐỒ ÁN
-
-Để demo trực quan và thuyết phục hội đồng chấm thi, chuẩn bị 3 ví MetaMask khác nhau trên các trình duyệt:
-
-1. **Trình duyệt 1 (Chế độ Admin - Nhà trường):**
-   - Dùng ví deploy Smart Contract.
-   - Gọi hàm `approveTeacher()` nhập địa chỉ ví của Giảng viên.
-   - Bấm bật `toggleEvaluation()` để mở đợt đánh giá.
-
-2. **Trình duyệt 2 (Chế độ Giảng viên):**
-   - Chuyển sang ví Giảng viên vừa được duyệt.
-   - Nhập tên môn học và bấm nút "Tạo lớp học phần".
-
-3. **Trình duyệt 3 & Tab ẩn danh (Chế độ Sinh viên):**
-   - **Ví Sinh viên A:** Bấm "Tham gia lớp" $\rightarrow$ Bấm gửi đánh giá (4 sao) $\rightarrow$ Thành công.
-   - **Thử nghiệm Spam:** Dùng Ví A bấm gửi đánh giá lần 2 $\rightarrow$ MetaMask báo lỗi Revert (Xác nhận cơ chế chống spam thành công).
-   - **Ví Sinh viên B (Chưa Join lớp):** Bấm gửi đánh giá $\rightarrow$ Hệ thống từ chối do chưa tham gia lớp.
-```
 eof
