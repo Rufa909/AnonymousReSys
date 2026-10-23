@@ -1,8 +1,6 @@
 # TỔNG QUAN ĐỀ TÀI HỌC PHẦN BLOCKCHAIN
 
 **Tên đề tài:** Xây dựng Ứng dụng Phi tập trung (DApp) Quản lý và Đánh giá Giảng viên Ẩn danh dựa trên Công nghệ Blockchain  
-**Học phần:** Công nghệ Blockchain / Chuỗi khối  
-**Ngôn ngữ & Nền tảng:** Solidity, Web3.js / Ethers.js, ReactJS, MetaMask, Ethereum Testnet  
 
 ---
 
@@ -11,7 +9,6 @@
 - **Tên đề tài:** Xây dựng Ứng dụng Phi tập trung (DApp) Quản lý và Đánh giá Giảng viên Ẩn danh dựa trên Công nghệ Blockchain
 - **Loại hình đề tài:** Ứng dụng thực hành (Web3 / DApp)
 - **Đối tượng sử dụng:** Nhà trường (Admin), Giảng viên, Sinh viên
-- **Từ khóa chính:** Blockchain, Smart Contract, Solidity, Anonymous Rating, DApp, MetaMask, Web3.
 
 ---
 
