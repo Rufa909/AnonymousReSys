@@ -129,6 +129,59 @@ Kiểm tra bản production bằng `npm run build`.
 
 ## Mẫu ghi cho phiên tiếp theo
 
+## Ngày 28/10/2026 — Xây dựng UI Sinh viên và kết quả công khai
+
+### Mục tiêu
+
+Tiếp tục phần việc của thành viên 2 trên nền giao diện Admin và Giảng viên đã có, giữ nguyên tông xanh, cấu trúc điều hướng và dữ liệu dùng chung giữa các vai trò.
+
+### Công việc đã thực hiện
+
+- Bổ sung vai trò Sinh viên vào bộ chọn không gian làm việc, hồ sơ ví mẫu và điều hướng responsive.
+- Xây dựng Dashboard Sinh viên với thống kê lớp đã tham gia, lớp chờ đánh giá và số đánh giá đã hoàn thành.
+- Xây dựng danh sách học phần để sinh viên tìm kiếm, tham gia lớp và nhận trạng thái đã đánh giá.
+- Xây dựng biểu mẫu đánh giá gồm chọn 1–5 sao, nhận xét tối đa 500 ký tự, kiểm tra độ dài và thông báo quyền riêng tư.
+- Chặn đánh giá khi chưa tham gia lớp, cổng đánh giá đóng, chưa chọn sao hoặc ví đã đánh giá lớp đó.
+- Xây dựng trang kết quả công khai gồm xếp hạng học phần, điểm trung bình, số lượt đánh giá và phản hồi gần đây.
+- Dùng chung state giữa ba vai trò: đánh giá mới cập nhật ngay số lượt, điểm trung bình và phản hồi công khai.
+- Tách dữ liệu mẫu, bộ icon, giao diện Sinh viên và trang công khai thành các module riêng để phần mới liên kết với cấu trúc hiện có mà không lặp mã.
+
+### File liên quan
+
+| File | Nội dung |
+| --- | --- |
+| `src/main.jsx` | Kết nối vai trò Sinh viên, state dùng chung và luồng đánh giá |
+| `src/components/Icon.jsx` | Bộ icon dùng chung cho toàn ứng dụng |
+| `src/components/StudentWorkspace.jsx` | Dashboard và danh sách lớp của Sinh viên |
+| `src/components/PublicResults.jsx` | Trang kết quả và phản hồi công khai |
+| `src/data/demoData.js` | Dữ liệu mẫu dùng chung giữa ba vai trò |
+| `src/styles.css` | Kiểu giao diện Sinh viên, kết quả, biểu mẫu đánh giá và responsive |
+
+### Kiểm tra đã thực hiện
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| `npm run build` | Thành công; 27 module được biên dịch |
+| Chuyển vai trò sang Sinh viên | Hiển thị đúng Dashboard, thống kê và ví sinh viên |
+| Gửi đánh giá 5 sao cho Công nghệ Blockchain | Thành công; số lượt tăng từ 32 lên 33 |
+| Mở trang kết quả công khai | Phản hồi mới xuất hiện, không hiển thị địa chỉ ví sinh viên |
+| Tham gia lớp An toàn và bảo mật thông tin | Nút chuyển từ Tham gia lớp sang Đánh giá |
+| Console trình duyệt | Không có warning hoặc error |
+
+### Giới hạn hiện tại
+
+- Dữ liệu vẫn nằm trong state React và trở về mặc định khi tải lại trang.
+- Chưa kết nối MetaMask, Ethers.js hoặc smart contract thật.
+- Nhận xét văn bản mới được mô phỏng ở frontend; smart contract tham khảo trong README hiện chỉ lưu điểm số.
+- “Ẩn danh” hiện là ẩn địa chỉ ví trên giao diện, chưa phải cơ chế ẩn danh mật mã trên blockchain công khai.
+
+### Việc tiếp theo
+
+- [ ] Tách lớp truy cập dữ liệu để thay state demo bằng Ethers.js.
+- [ ] Thống nhất cách lưu nhận xét: on-chain, event hoặc IPFS kèm hash.
+- [ ] Bổ sung smart contract và kiểm thử cho `joinCourse`, `submitReview` và chống đánh giá trùng.
+- [ ] Kiểm thử responsive trên thêm kích thước tablet và điện thoại thực tế.
+
 ```markdown
 ## Ngày DD/MM/YYYY — Tên công việc
 
