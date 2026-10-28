@@ -1,5 +1,3 @@
-# TỔNG QUAN ĐỀ TÀI HỌC PHẦN BLOCKCHAIN
-
 **Tên đề tài:** Xây dựng Ứng dụng Phi tập trung (DApp) Quản lý và Đánh giá Giảng viên Ẩn danh dựa trên Công nghệ Blockchain  
 
 ---
