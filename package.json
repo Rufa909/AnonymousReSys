@@ -1,11 +1,29 @@
 {
-  "name": "anonymous-resys", "version": "0.1.0", "private": true, "type": "module",
+  "name": "anonymous-resys",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0", "build": "vite build", "preview": "vite preview --host 0.0.0.0",
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
     "contracts:compile": "node scripts/compile-contracts.mjs",
     "contracts:test": "node --test test/contracts/admin-teacher.test.mjs"
   },
-  "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" },
-  "devDependencies": { "vite": "^6.0.0", "solc": "0.8.28", "hardhat": "3.21.2", "ethers": "^6.13.0" },
-  "overrides": { "solc": { "tmp": "^0.2.6" } }
+  "dependencies": {
+    "mysql2": "^3.24.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "ethers": "^6.13.0",
+    "hardhat": "3.21.2",
+    "solc": "0.8.28",
+    "vite": "^6.0.0"
+  },
+  "overrides": {
+    "solc": {
+      "tmp": "^0.2.6"
+    }
+  }
 }
