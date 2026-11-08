@@ -1,5 +1,7 @@
 **Tên đề tài:** Xây dựng Ứng dụng Phi tập trung (DApp) Quản lý và Đánh giá Giảng viên Ẩn danh dựa trên Công nghệ Blockchain  
 
+**Triển khai giai đoạn 2 — Thành viên 1:** [Smart contract Admin và Giảng viên](contracts/DecentralizedEduEvaluation.sol). Xem [hướng dẫn compile, test, demo Remix và bàn giao](doc/SMART_CONTRACT.md). Mã Solidity ở mục 6 bên dưới là thiết kế tham khảo cho toàn bộ luồng của nhóm.
+
 ---
 
 ## 1. THÔNG TIN CHUNG

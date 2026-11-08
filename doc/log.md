@@ -5,7 +5,7 @@
 - **Học phần:** Blockchain.
 - **Đề tài:** DApp quản lý và đánh giá giảng viên ẩn danh dựa trên công nghệ Blockchain.
 - **Vai trò sử dụng:** Nhà trường (Admin), Giảng viên, Sinh viên.
-- **Phần việc đang thực hiện:** Thành viên 1 — giai đoạn 1, xây dựng UI Admin và Giảng viên.
+- **Phần việc đang thực hiện:** Thành viên 1 — đã hoàn thành UI giai đoạn 1 và smart contract Admin/Giảng viên giai đoạn 2; chưa tích hợp Web3 giai đoạn 3.
 - **Nguồn yêu cầu:** `README.md` và tài liệu phân công `AnonymousRESYS.docx` do người dùng cung cấp.
 
 ## Quy ước cập nhật
@@ -197,3 +197,81 @@ Tiếp tục phần việc của thành viên 2 trên nền giao diện Admin v�
 
 ### Việc tiếp theo
 ```
+
+## Ngày 07/11/2026 — Giai đoạn 2 thành viên 1
+
+### Mục tiêu
+
+Triển khai cấu trúc dữ liệu, phân quyền và logic quản lý Admin/Giảng viên theo phân công. Giữ phần đăng ký lớp và gửi đánh giá cho thành viên 2.
+
+### Công việc đã thực hiện
+
+- Kiểm tra repository: UI của cả ba vai trò và trang kết quả công khai đã có; chưa có file Solidity thực thi.
+- Tạo `contracts/DecentralizedEduEvaluation.sol` bằng Solidity 0.8.28.
+- Đặt ví deploy làm `schoolAdmin` cố định; bổ sung modifier `onlyAdmin`, `onlyApprovedTeacher` để kiểm tra quyền trên contract.
+- Khai báo `Course`, `courses`, `courseCount`, `approvedTeachers`, `evaluationOpen`; chuẩn bị storage `enrolledStudents`, `hasEvaluated` cho thành viên 2.
+- Triển khai `approveTeacher`: chỉ Admin, chặn địa chỉ zero, chặn duyệt trùng, phát event `TeacherApproved`.
+- Triển khai `toggleEvaluation`: chỉ Admin, mặc định đóng, phát event khi đổi trạng thái.
+- Triển khai `createCourse`: chỉ giảng viên được duyệt; ID tăng từ 0; lớp thuộc ví gọi hàm; tổng điểm và lượt đánh giá ban đầu bằng 0.
+- Kiểm tra tên lớp: không rỗng, không chỉ chứa khoảng trắng/ký tự điều khiển ASCII, tối đa 480 byte UTF-8; lưu tên nguyên trạng, không ép trùng giới hạn ký tự của frontend.
+- Viết script compile bằng solc-js cố định phiên bản, xuất ABI/bytecode có thể tái tạo; optimizer 200 runs, EVM target paris.
+- Thiết lập EVM Hardhat 3 trong bộ nhớ và 11 ca kiểm thử bằng Node test runner/Ethers.
+- Viết tài liệu chạy lệnh, demo Remix theo ba tài khoản và bàn giao storage/hàm cần bổ sung cho thành viên 2.
+- Thêm liên kết triển khai thực tế ở đầu README; giữ phần code mẫu toàn luồng làm tài liệu tham khảo.
+
+### File liên quan
+
+| File | Nội dung |
+| --- | --- |
+| `contracts/DecentralizedEduEvaluation.sol` | Contract Admin/Giảng viên và cấu trúc dữ liệu dùng chung |
+| `scripts/compile-contracts.mjs` | Biên dịch solc-js, xuất ABI và bytecode |
+| `hardhat.config.js` | Blockchain cục bộ dùng trong test, chain ID 31337 |
+| `test/contracts/admin-teacher.test.mjs` | Kiểm thử quyền, dữ liệu, event và các trường hợp lỗi |
+| `package.json`, `package-lock.json` | Lệnh compile/test và dependency công cụ |
+| `.gitignore` | Bỏ qua artifacts và cache |
+| `doc/SMART_CONTRACT.md` | Hướng dẫn và lưu ý tích hợp |
+| `README.md` | Liên kết đến contract và hướng dẫn mới |
+| `doc/log.md` | Nhật ký phiên này |
+
+### Kiểm tra đã thực hiện
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| `npm run contracts:compile` | Thành công với solc 0.8.28; tạo ABI/bytecode trong `artifacts/contracts/` |
+| `npm run contracts:test` | 11/11 ca thành công trên Hardhat 3 EVM cục bộ |
+| Khởi tạo | Admin đúng ví deploy; cổng đóng; chưa có lớp và quyền giảng viên |
+| Phê duyệt | Ví hợp lệ được cấp quyền, event đúng; chặn ví zero, duyệt trùng và gọi trái quyền |
+| Cổng khảo sát | Admin mở/đóng đúng, event đúng; giảng viên và sinh viên không thể đổi trạng thái |
+| Tạo lớp | Giảng viên được duyệt tạo được lớp tiếng Việt; ID và chủ sở hữu đúng; điểm/lượt ban đầu bằng 0 |
+| Phân quyền tạo lớp | Admin chưa được duyệt, giảng viên chưa duyệt và sinh viên đều bị từ chối |
+| Giới hạn tên | Chặn tên rỗng, ASCII whitespace, vượt 480 byte; nhận tên UTF-8 đúng 480 byte |
+| Nhiều giảng viên | ID tăng liên tục, không ghi đè lớp trước; tạo lớp được khi khảo sát đóng hoặc mở |
+| Giao dịch trái quyền thực tế | Receipt status 0, đúng transaction hash; quyền và số lớp không đổi |
+| `npm run build` | Frontend build thành công, 27 module |
+| `git diff --check` | Không phát hiện lỗi whitespace |
+| `npm audit --omit=dev` | Không ghi nhận lỗ hổng |
+
+### Vấn đề và cách xử lý
+
+- Sandbox không phân giải được npm registry: cài dependency bằng quyền thực thi ngoài sandbox đã được công cụ cho phép.
+- Hardhat 2 cần tạo cấu hình trong thư mục người dùng và có nhiều dependency phụ cũ. Đã chuyển sang Hardhat 3.21.2, kiểm thử lại thành công.
+- `solc` 0.8.28 phụ thuộc `tmp` cũ: override sang dòng 0.2.6, kiểm tra compile/test thành công.
+- Audit toàn bộ còn 3 mục mức high cùng thuộc chuỗi Hardhat/Zod 3. Không ép nâng Zod 4 khác major; lưu chi tiết và giới hạn sử dụng công cụ test cục bộ trong `doc/SMART_CONTRACT.md`.
+
+### Giới hạn hiện tại
+
+- Chưa triển khai `joinCourse`, `submitReview`, `getAverageScore` và event Sinh viên; thuộc thành viên 2 giai đoạn 2.
+- Chưa có cơ chế lưu nhận xét văn bản trên contract.
+- Chưa triển khai database hoặc kết nối frontend với contract. UI vẫn dùng dữ liệu demo.
+- Chưa deploy Sepolia hoặc thao tác Remix trong phiên này; tài liệu Remix là hướng dẫn chạy lại.
+- Chưa có chuyển quyền Admin hoặc thu hồi quyền giảng viên vì nằm ngoài ba hàm được phân công.
+- Kiểm tra tên không chuẩn hóa khoảng trắng Unicode; frontend cần trim đầu vào khi tích hợp.
+
+### Việc tiếp theo
+
+- [x] Hoàn thành smart contract Admin/Giảng viên giai đoạn 2 thành viên 1.
+- [x] Biên dịch, kiểm thử tự động và viết hướng dẫn demo Remix.
+- [ ] Bàn giao cho thành viên 2 bổ sung logic Sinh viên và đánh giá vào cùng contract.
+- [ ] Thống nhất cách lưu nhận xét trước khi hoàn thiện contract chung.
+- [ ] Giai đoạn 3 thành viên 1: kết nối MetaMask, đọc quyền thực tế và gọi các hàm Admin/Giảng viên từ UI.
+- [ ] Kiểm tra bản vá tương thích của Hardhat/Zod trước khi cập nhật công cụ kiểm thử.
