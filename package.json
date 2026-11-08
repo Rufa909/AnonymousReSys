@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "contracts:compile": "node scripts/compile-contracts.mjs",
-    "contracts:test": "node --test test/contracts/admin-teacher.test.mjs"
+    "contracts:test": "node --test test/contracts/admin-teacher.test.mjs test/contracts/student-review.test.mjs"
   },
   "dependencies": {
     "mysql2": "^3.24.6",

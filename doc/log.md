@@ -275,3 +275,42 @@ Triển khai cấu trúc dữ liệu, phân quyền và logic quản lý Admin/G
 - [ ] Thống nhất cách lưu nhận xét trước khi hoàn thiện contract chung.
 - [ ] Giai đoạn 3 thành viên 1: kết nối MetaMask, đọc quyền thực tế và gọi các hàm Admin/Giảng viên từ UI.
 - [ ] Kiểm tra bản vá tương thích của Hardhat/Zod trước khi cập nhật công cụ kiểm thử.
+
+## Ngày 08/11/2026 — Smart contract Sinh viên và đánh giá
+
+### Mục tiêu
+
+Hoàn thiện phần Smart Contract giai đoạn 2 của thành viên 2 trên contract Admin/Giảng viên hiện có, giữ nguyên ABI tiếng Anh để đồng bộ README, test và tích hợp frontend sau này.
+
+### Công việc đã thực hiện
+
+- Khôi phục ABI tiếng Anh tương thích với tài liệu và bộ test Admin/Giảng viên.
+- Bổ sung custom error cho lớp không tồn tại, tham gia trùng, chưa tham gia, đánh giá trùng, cổng đóng và điểm không hợp lệ.
+- Triển khai `joinCourse`, phát `StudentJoined` và cập nhật `enrolledStudents`.
+- Triển khai `submitReview`, chặn điểm ngoài 1–5 và bảo đảm mỗi ví chỉ đánh giá một lần cho mỗi lớp.
+- Triển khai `getAverageScore`, trả điểm trung bình nhân 10.
+- Tạo `student-review.test.mjs` với 9 ca kiểm thử và cập nhật lệnh test để chạy cả hai nhóm.
+- Cập nhật `SMART_CONTRACT.md` theo trạng thái triển khai thực tế.
+
+### Kiểm tra đã thực hiện
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| `npm.cmd run contracts:compile` | Thành công với Solidity 0.8.28 |
+| Test Admin/Giảng viên | 11/11 thành công |
+| Test Sinh viên/Đánh giá | 9/9 thành công |
+| Tổng bộ test | 20 pass, 0 fail |
+
+### Giới hạn hiện tại
+
+- Frontend vẫn dùng state React demo và chưa gọi ABI bằng Ethers.js.
+- Chưa lưu nhận xét văn bản trên blockchain.
+- Chưa deploy contract lên Sepolia.
+- MySQL mới có connection pool, chưa có schema/API hoặc tích hợp giao diện.
+
+### Việc tiếp theo
+
+- [ ] Tạo lớp truy cập blockchain cho MetaMask và Ethers.js.
+- [ ] Thay các thao tác demo bằng giao dịch contract thật.
+- [ ] Thống nhất cách lưu nhận xét văn bản.
+- [ ] Deploy Sepolia và lưu contract address theo biến môi trường.

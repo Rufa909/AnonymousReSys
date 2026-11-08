@@ -1,8 +1,8 @@
-# Smart contract giai đoạn 2 — Thành viên 1
+# Smart contract giai đoạn 2
 
 ## Phạm vi đã triển khai
 
-Mã chạy thực tế nằm trong `contracts/DecentralizedEduEvaluation.sol`. Phần Solidity trong README là bản thiết kế tham khảo của toàn nhóm; file contract mới chỉ triển khai phần Admin và Giảng viên.
+Mã chạy thực tế nằm trong `contracts/DecentralizedEduEvaluation.sol`. Phần Solidity trong README là bản thiết kế tham khảo; contract thực tế đã triển khai luồng Admin, Giảng viên và Sinh viên.
 
 | Thành phần | Hành vi |
 | --- | --- |
@@ -14,6 +14,11 @@ Mã chạy thực tế nằm trong `contracts/DecentralizedEduEvaluation.sol`. P
 | `createCourse(string)` | Chỉ ví được duyệt; tạo lớp thuộc ví gọi hàm và phát `CourseCreated` |
 | `courseCount()` | Tổng số lớp; lớp đầu tiên có ID 0 |
 | `courses(uint256)` | Trả về tên lớp, ví giảng viên, tồn tại, tổng điểm và số lượt đánh giá |
+| `joinCourse(uint256)` | Cho ví tham gia lớp tồn tại; chặn tham gia trùng |
+| `submitReview(uint256,uint256)` | Chỉ nhận điểm 1–5 khi cổng mở; yêu cầu đã tham gia và chặn đánh giá trùng |
+| `getAverageScore(uint256)` | Trả điểm trung bình nhân 10; ví dụ 4.5 trả về 45 |
+| `enrolledStudents(uint256,address)` | Kiểm tra một ví đã tham gia lớp hay chưa |
+| `hasEvaluated(uint256,address)` | Kiểm tra một ví đã đánh giá lớp hay chưa |
 
 Admin không mặc nhiên có quyền tạo lớp. Muốn tạo lớp bằng ví Admin, Admin phải duyệt chính địa chỉ đó bằng `approveTeacher`. Quyền được thực thi trên contract, độc lập với bộ chọn vai trò của UI demo.
 
@@ -29,7 +34,7 @@ struct Course {
 }
 ```
 
-Giữ nguyên tên và thứ tự các trường theo README để thành viên 2 tiếp tục xử lý điểm. `totalScore` và `reviewCount` bằng 0 khi tạo lớp. `enrolledStudents` và `hasEvaluated` đã được khai báo làm storage dùng chung, mặc định `false`.
+Giữ nguyên tên và thứ tự các trường theo README. `totalScore` và `reviewCount` bằng 0 khi tạo lớp. `enrolledStudents` và `hasEvaluated` mặc định `false`, được cập nhật bởi luồng Sinh viên.
 
 `courses(id)` với ID chưa tồn tại trả về các giá trị mặc định và `exists == false`. Khi bổ sung luồng Sinh viên, phải kiểm tra `exists` trước khi ghi dữ liệu.
 
@@ -59,7 +64,7 @@ Compiler `solc` được cố định ở 0.8.28. Script biên dịch dùng opti
 
 Test dùng Node test runner, Ethers và Hardhat 3 Network trong bộ nhớ (chain ID 31337). Yêu cầu Node.js 22.13+ thuộc dòng phiên bản chẵn được Hardhat hỗ trợ; phiên kiểm tra sử dụng Node.js 24.15.0. Mỗi ca test deploy contract mới, không dùng ví cá nhân, không gọi RPC bên ngoài và không tốn ETH thật. Sau khi cài dependency, compile và test không cần tải compiler từ mạng. `hardhat.config.js` cấu hình EVM test; chạy lệnh `contracts:compile` để sử dụng compiler và thiết lập xuất artifact của dự án.
 
-Bộ test bao gồm: khởi tạo quyền và storage, duyệt ví, chặn vượt quyền, zero address, duyệt trùng, mở/đóng khảo sát và event, kiểm tra quyền tạo lớp, tên tiếng Việt, ID tuần tự giữa nhiều giảng viên, giới hạn byte và giao dịch trái quyền bị từ chối.
+Bộ test gồm 20 ca: 11 ca Admin/Giảng viên và 9 ca Sinh viên. Phần Sinh viên kiểm tra tham gia lớp, lớp không tồn tại, tham gia trùng, cổng đánh giá đóng, chưa tham gia, điểm ngoài 1–5, đánh giá hợp lệ, đánh giá trùng và tính điểm trung bình nhiều sinh viên.
 
 ### Kiểm tra dependency ngày 07/11/2026
 
@@ -81,16 +86,16 @@ Bộ test bao gồm: khởi tạo quyền và storage, duyệt ví, chặn vư�
 
 Đây là hướng dẫn để người dùng chạy lại; việc kiểm tra tự động trong repository dùng EVM cục bộ, không phải thao tác đã thực hiện trên Remix hay deploy Sepolia.
 
-## Bàn giao cho thành viên 2
+## Phần Thành viên 2
 
-Tiếp tục trong cùng contract và tái sử dụng storage đã có, tránh khai báo trùng:
+- `joinCourse(courseId)` kiểm tra lớp tồn tại và trạng thái tham gia trước khi cập nhật `enrolledStudents` và phát `StudentJoined`.
+- `submitReview(courseId, score)` kiểm tra cổng đánh giá, lớp, tư cách tham gia, trạng thái đánh giá và điểm 1–5; sau đó cập nhật `hasEvaluated`, `totalScore`, `reviewCount` và phát `ReviewSubmitted`.
+- `getAverageScore(courseId)` trả điểm trung bình dạng nhân 10 để giữ một chữ số thập phân mà không dùng số thực trong Solidity.
+- Các custom error cung cấp dữ liệu course ID, ví sinh viên hoặc điểm không hợp lệ để frontend giải mã.
 
-- `joinCourse(courseId)`: kiểm tra lớp tồn tại và chưa tham gia, cập nhật `enrolledStudents`.
-- `submitReview(courseId, score)`: kiểm tra cổng đang mở, lớp tồn tại, đã tham gia, chưa đánh giá và điểm 1–5; cập nhật `hasEvaluated`, `totalScore`, `reviewCount`.
-- Bổ sung event `StudentJoined`, `ReviewSubmitted` và hàm `getAverageScore` theo phần việc của thành viên 2.
-- Thống nhất cách lưu nhận xét văn bản trước khi thêm vào contract; bản này chỉ chuẩn bị trường tổng điểm và lượt đánh giá.
+Nhận xét văn bản chưa được lưu trên contract. Cần thống nhất dùng event, IPFS kèm hash hoặc lưu off-chain trước khi tích hợp frontend.
 
-Chưa kết nối UI với contract, chưa triển khai database, chưa deploy Sepolia. Các phần tích hợp MetaMask/Ethers thuộc giai đoạn 3. Có Ethers trong devDependency để phục vụ test, không có mã Web3 được thêm vào frontend.
+Chưa kết nối UI với contract và chưa deploy Sepolia. `server/db.js` mới tạo connection pool MySQL, chưa có schema/API và chưa liên kết với frontend. Các phần tích hợp MetaMask/Ethers thuộc giai đoạn 3; Ethers hiện dùng trong test, chưa được gọi từ frontend.
 
 ## Tài liệu đối chiếu
 
