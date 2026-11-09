@@ -72,6 +72,38 @@ test('approval, teacher course creation and toggle confirm receipts and refresh 
   assert.equal((await api.snapshot(selected)).evaluationOpen, true);
 });
 
+test('student joins a course, submits one score and refreshes personal state', async () => {
+  const api = client();
+  const adminAddress = selected;
+  const teacherAddress = await teacher.getAddress();
+  const studentAddress = await student.getAddress();
+  await api.transact(adminAddress, 'approve', teacherAddress);
+  selected = teacherAddress;
+  await api.transact(selected, 'create', 'An toàn Blockchain');
+
+  selected = studentAddress;
+  let data = await api.snapshot(selected);
+  assert.equal(data.role, 'student'); assert.equal(data.studentSupported, true);
+  assert.equal(data.courses[0].joined, false); assert.equal(data.courses[0].evaluated, false);
+  await api.transact(selected, 'join', { courseId: '0' });
+  data = await api.snapshot(selected);
+  assert.equal(data.courses[0].joined, true); assert.equal(data.courses[0].evaluated, false);
+  await assert.rejects(() => api.transact(selected, 'join', { courseId: '0' }), error => {
+    assert.match(formatWeb3Error(error), /đã tham gia/); return true;
+  });
+
+  selected = adminAddress;
+  await api.transact(selected, 'toggle', false);
+  selected = studentAddress;
+  await api.transact(selected, 'review', { courseId: '0', score: 5 });
+  data = await api.snapshot(selected);
+  assert.equal(data.courses[0].evaluated, true);
+  assert.equal(data.courses[0].reviewCount, 1n); assert.equal(data.courses[0].score, 5);
+  await assert.rejects(() => api.transact(selected, 'review', { courseId: '0', score: 4 }), error => {
+    assert.match(formatWeb3Error(error), /đã đánh giá/); return true;
+  });
+});
+
 test('Vietnamese ABI works for the same complete member-1 workflow', async () => {
   const vi = await new ContractFactory(vietnameseArtifact.abi, vietnameseArtifact.bytecode, admin).deploy();
   await vi.waitForDeployment();
@@ -84,6 +116,7 @@ test('Vietnamese ABI works for the same complete member-1 workflow', async () =>
   await api.transact(selected, 'create', 'Lớp tiếng Việt');
   const data = await api.snapshot(selected);
   assert.equal(data.role, 'teacher'); assert.equal(data.evaluationOpen, true);
+  assert.equal(data.studentSupported, false);
   assert.equal(data.courses[0].name, 'Lớp tiếng Việt');
 });
 

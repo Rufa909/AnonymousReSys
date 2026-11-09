@@ -18,6 +18,12 @@ export function formatWeb3Error(error) {
     if (/AlreadyApproved|DaDuocDuyet/.test(message)) return 'Ví giảng viên này đã được phê duyệt.';
     if (/TeacherNotApproved|ChuaDuocDuyet/.test(message)) return 'Ví giảng viên chưa được Admin phê duyệt.';
     if (/InvalidCourseName|TenHocPhanKhongHopLe/.test(message)) return 'Tên học phần không hợp lệ.';
+    if (/CourseNotFound/.test(message)) return 'Lớp học phần không tồn tại.';
+    if (/StudentAlreadyEnrolled/.test(message)) return 'Bạn đã tham gia lớp học phần này.';
+    if (/StudentNotEnrolled/.test(message)) return 'Bạn cần tham gia lớp trước khi đánh giá.';
+    if (/ReviewAlreadySubmitted/.test(message)) return 'Bạn đã đánh giá lớp học phần này.';
+    if (/EvaluationClosed/.test(message)) return 'Cổng đánh giá hiện đang đóng.';
+    if (/InvalidScore/.test(message)) return 'Điểm đánh giá phải từ 1 đến 5.';
     return 'Contract từ chối thao tác. Kiểm tra quyền, dữ liệu và phiên bản ABI đã cấu hình.';
   }
   return error?.shortMessage || error?.message || 'Không thể xử lý yêu cầu blockchain.';
@@ -82,8 +88,19 @@ export class SchoolChainClient {
       }))));
     }
     await this.assertIdentity(account);
+    if (m.join) {
+      for (let offset = 0; offset < courses.length; offset += 10) {
+        const states = await Promise.all(courses.slice(offset, offset + 10).map(async course => ({
+          id: course.id,
+          joined: await this.contract[m.enrolled](course.id, account, read),
+          evaluated: await this.contract[m.evaluated](course.id, account, read),
+        })));
+        for (const state of states) Object.assign(courses.find(course => course.id === state.id), state);
+      }
+    }
+    await this.assertIdentity(account);
     return { account, admin, role: sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student',
-      evaluationOpen, courseCount: count, courses, teachers, block };
+      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported: Boolean(m.join) };
   }
   async lookupTeacher(account, address) {
     await this.assertIdentity(account);
@@ -93,17 +110,31 @@ export class SchoolChainClient {
     return { wallet, approved };
   }
   async transact(account, operation, input, onStatus = () => {}) {
-    if (!['approve', 'toggle', 'create'].includes(operation)) throw new Error('Thao tác không được hỗ trợ.');
+    if (!['approve', 'toggle', 'create', 'join', 'review'].includes(operation)) throw new Error('Thao tác không được hỗ trợ.');
     await this.assertIdentity(account);
     const m = this.methods;
+    if ((operation === 'join' || operation === 'review') && !m.join) {
+      throw new Error('Contract đang cấu hình chưa hỗ trợ chức năng Sinh viên.');
+    }
     const [admin, approved] = await Promise.all([this.contract[m.admin](), this.contract[m.approved](account)]);
-    if (operation === 'create' ? !approved : !sameAddress(admin, account)) throw new Error('Ví hiện tại không có quyền thực hiện thao tác này.');
+    if (operation === 'create' && !approved) throw new Error('Ví hiện tại không có quyền thực hiện thao tác này.');
+    if (['approve', 'toggle'].includes(operation) && !sameAddress(admin, account)) throw new Error('Ví hiện tại không có quyền thực hiện thao tác này.');
     let args = [];
     if (operation === 'approve') args = [walletAddress(input)];
     if (operation === 'create') {
       const name = String(input || '').trim();
       if (!name || name.length > 120 || toUtf8Bytes(name).length > 480) throw new Error('Tên học phần cần có từ 1 đến 120 ký tự, tối đa 480 byte UTF-8.');
       args = [name];
+    }
+    if (operation === 'join' || operation === 'review') {
+      const courseId = String(input?.courseId ?? '');
+      if (!/^\d+$/.test(courseId)) throw new Error('ID lớp học phần không hợp lệ.');
+      args = [BigInt(courseId)];
+      if (operation === 'review') {
+        const score = Number(input?.score);
+        if (!Number.isInteger(score) || score < 1 || score > 5) throw new Error('Điểm đánh giá phải từ 1 đến 5.');
+        args.push(score);
+      }
     }
     // Toggle is non-idempotent. Check displayed state before asking for a signature.
     if (operation === 'toggle' && typeof input === 'boolean' && await this.contract[m.open]() !== input) {

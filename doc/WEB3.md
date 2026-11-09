@@ -1,28 +1,28 @@
 ## Kết quả triển khai
 
-Website mặc định mở không gian blockchain thật. MetaMask cung cấp địa chỉ ví; Ethers đọc quyền từ contract để mở Dashboard Admin hoặc Giảng viên. Ba thao tác đã gắn giao dịch: duyệt giảng viên, mở/đóng đánh giá và tạo lớp học phần. Dữ liệu chỉ được tải lại sau receipt thành công, không tự tăng số lớp hoặc đổi quyền trước khi giao dịch được xác nhận.
+Website mặc định mở không gian blockchain thật. MetaMask cung cấp địa chỉ ví; Ethers đọc quyền từ contract để mở Dashboard Admin, Giảng viên hoặc Sinh viên. Năm thao tác đã gắn giao dịch: duyệt giảng viên, mở/đóng đánh giá, tạo lớp học phần, tham gia lớp và gửi điểm. Dữ liệu chỉ được tải lại sau receipt thành công, không tự tăng số lớp hoặc đổi quyền trước khi giao dịch được xác nhận.
 
 Bản UI cũ vẫn có ở nút “Xem bản UI mẫu”, hiển thị nhãn dữ liệu mô phỏng riêng. Hai chế độ không dùng chung state và không trộn số liệu mẫu với contract.
 
-## Cấu hình đã xác minh ngày 09/11/2026
+## Cấu hình đang dùng, xác minh ngày 09/11/2026
 
 - Mạng: Ethereum Sepolia, chain ID `11155111`.
-- Contract: `0x43ddAB1A429302eec01df753966718c53Ae108D8`.
-- ABI: `vietnamese`, theo bản tiếng Việt đã trao đổi với người dùng.
-- Đọc từ RPC công khai: `viAdmin()` trả `0x2483e769B6d8f3D035121813998e7151f8bE23C7`, `tongSoLop()` trả `0`, `congDanhGiaDangMo()` trả `false` ở thời điểm xác minh.
-- Địa chỉ Admin trước đó bị gửi nhầm làm contract; địa chỉ mới đã được kiểm tra bằng hàm của đồ án.
+- Contract đầy đủ: `0xe5d259F7bF6025883f61F5a688D865B75d49Fb0B`.
+- ABI: `english`, có cả luồng Admin, Giảng viên và Sinh viên.
+- Đọc từ RPC công khai: bytecode bắt đầu bằng `0x60806040`; `schoolAdmin()` trả `0x417c2EFdddF3e4A89e3C651e557246E6B04B7F0e`, `courseCount()` trả `0`, `evaluationOpen()` trả `false` ở thời điểm xác minh.
+- Contract tiếng Việt cũ `0x43ddAB1A429302eec01df753966718c53Ae108D8` không còn là cấu hình đang dùng vì chưa có luồng Sinh viên.
 
 Đây là kiểm tra đọc; chưa gửi giao dịch thay đổi trạng thái trên Sepolia trong phiên triển khai này. Không xác nhận bản deploy có các hàm Sinh viên vì ngoài phạm vi thành viên 1.
 
 Ba dòng công khai được thêm vào `.env`, giữ nguyên cấu hình MySQL:
 
 ```dotenv
-VITE_CONTRACT_ADDRESS=0x43ddAB1A429302eec01df753966718c53Ae108D8
+VITE_CONTRACT_ADDRESS=0xe5d259F7bF6025883f61F5a688D865B75d49Fb0B
 VITE_CHAIN_ID=11155111
-VITE_CONTRACT_ABI=vietnamese
+VITE_CONTRACT_ABI=english
 ```
 
-File `.env.web3.example` cung cấp mẫu tương ứng. Không đặt mật khẩu MySQL, private key hoặc seed phrase vào biến `VITE_`. Khi đổi contract hoặc ABI, phải khởi động lại dev server. Bản production phải build lại sau khi đổi cấu hình.
+File `.env.example` cung cấp mẫu tương ứng để các thành viên sao chép thành `.env`. Không đặt mật khẩu MySQL, private key hoặc seed phrase vào biến `VITE_`. Khi đổi contract hoặc ABI, phải khởi động lại dev server. Bản production phải build lại sau khi đổi cấu hình.
 
 ## Chạy và thử bằng MetaMask
 
@@ -40,7 +40,7 @@ npm run dev -- --port 5174
 7. Chuyển MetaMask sang ví giảng viên vừa được duyệt. Website xóa dữ liệu phiên cũ và tải lại quyền theo tài khoản mới.
 8. Chọn “Tạo lớp học phần”, nhập tên và xác nhận giao dịch. Sau khi receipt thành công, lớp xuất hiện và có ví sở hữu đúng.
 9. Tải lại trang rồi kết nối lại: dữ liệu lớp được đọc lại từ contract. Danh sách ví từng tra cứu chỉ lưu trong bộ nhớ phiên, không phải hồ sơ bền vững.
-10. Ví chưa được duyệt chỉ thấy thông báo hướng dẫn và danh sách lớp đọc được. Luồng tham gia/gửi đánh giá thật dành cho thành viên 2.
+10. Với contract ABI `english`, ví không phải Admin/Giảng viên được nhận là Sinh viên: bấm “Tham gia lớp”, xác nhận MetaMask; khi cổng mở, bấm “Gửi đánh giá”, chọn 1–5 sao và xác nhận lần nữa.
 
 “Ngắt kết nối” chỉ kết thúc phiên trong ứng dụng, không tự thu hồi quyền đã cấp trong MetaMask. Có thể quản lý kết nối website trong ví khi cần.
 
@@ -56,6 +56,8 @@ npm run dev -- --port 5174
 | Duyệt ví | approveTeacher | duyetGiangVien |
 | Bật/tắt khảo sát | toggleEvaluation | batTatDanhGia |
 | Tạo lớp | createCourse | taoLopHocPhan |
+| Tham gia lớp | joinCourse | Chưa có trong bản deploy tiếng Việt hiện tại |
+| Gửi điểm | submitReview | Chưa có trong bản deploy tiếng Việt hiện tại |
 
 File Solidity trong repository vẫn giữ ABI tiếng Anh để tương thích với contract/test của cả nhóm. Adapter frontend hỗ trợ cả hai phiên bản bằng cấu hình, không đổi mã contract đã deploy.
 
@@ -90,7 +92,7 @@ npm run contracts:test
 npm run build
 ```
 
-Bộ Web3 gồm 10 ca: đọc trạng thái; duyệt/tạo lớp/toggle; tương thích ABI tiếng Việt; chặn vượt quyền; sai mạng/đổi ví; đổi ví trong lúc đọc; sai ABI/địa chỉ; toggle dùng trạng thái cũ; từ chối ký; tên rỗng và duyệt trùng. Test deploy các fixture vào Hardhat trong bộ nhớ, không dùng ví hay ETH của người dùng.
+Bộ Web3 gồm 11 ca: đọc trạng thái; duyệt/tạo lớp/toggle; Sinh viên tham gia và gửi một điểm; tương thích ABI tiếng Việt; chặn vượt quyền; sai mạng/đổi ví; đổi ví trong lúc đọc; sai ABI/địa chỉ; toggle dùng trạng thái cũ; từ chối ký; tên rỗng và duyệt trùng. Test deploy các fixture vào Hardhat trong bộ nhớ, không dùng ví hay ETH của người dùng.
 
 Đã kiểm tra trên trình duyệt không có MetaMask: hiển thị đúng màn hình chào và thông báo thiếu ví; chuyển qua lại UI mẫu có nhãn phân biệt. Chưa hoàn thành kiểm thử bằng ký giao dịch MetaMask thật trên Sepolia, người dùng cần chạy lại luồng thủ công ở trên.
 
@@ -99,7 +101,8 @@ Bộ Web3 gồm 10 ca: đọc trạng thái; duyệt/tạo lớp/toggle; tương
 - MySQL giữ nguyên connection pool hiện có; không tạo API hay ghi hồ sơ/metadata vào database trong phần này. Tạo lớp hiện ghi tên lớp và ví sở hữu lên contract. Việc gắn lớp với danh mục học vụ MySQL cần API và xác thực backend riêng.
 - Danh sách giảng viên hiển thị các ví đã tra cứu trong phiên, ví đang kết nối và ví sở hữu lớp. Không khẳng định đó là toàn bộ giảng viên đã duyệt; chưa index TeacherApproved hoặc đọc danh sách hồ sơ MySQL.
 - Tải tối đa 1.000 lớp từ contract theo batch 10 RPC, dừng và báo rõ nếu vượt giới hạn. Cần bổ sung phân trang/indexer cho quy mô lớn.
-- Điểm/lượt đọc từ contract để phục vụ dashboard; không triển khai chức năng gửi đánh giá hay nhận xét thật của thành viên 2.
+- Luồng Sinh viên chỉ hoạt động với contract đầy đủ ABI `english`; địa chỉ Sepolia tiếng Việt cũ chưa có các hàm này.
+- Contract chỉ lưu điểm 1–5, không lưu nội dung nhận xét văn bản.
 - Chưa thay đổi cơ chế riêng tư hoặc danh sách sinh viên hợp lệ của contract.
 - Quyền Admin được ưu tiên khi một ví đồng thời là Admin và giảng viên; dùng hai tài khoản riêng để demo hai dashboard.
 

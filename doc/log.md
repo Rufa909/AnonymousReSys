@@ -347,4 +347,27 @@ Kết nối MetaMask và gắn giao dịch thật cho Admin/Giảng viên; giữ
 
 ### File liên quan
 
-src/web3/contract.js, src/web3/client.js, src/web3/useSchoolChain.js, src/web3/styles.css, src/components/ChainWorkspace.jsx, src/main.jsx, test/web3/client.test.mjs, package.json, package-lock.json, .env.web3.example, doc/WEB3_THANH_VIEN_1.md.
+src/web3/contract.js, src/web3/client.js, src/web3/useSchoolChain.js, src/web3/styles.css, src/components/ChainWorkspace.jsx, src/main.jsx, test/web3/client.test.mjs, package.json, package-lock.json, doc/WEB3.md.
+
+## Ngày 09/11/2026 — Giai đoạn 3 thành viên 2
+
+### Công việc đã thực hiện
+
+- Mở rộng ABI tiếng Anh cho `enrolledStudents`, `hasEvaluated`, `joinCourse` và `submitReview`.
+- Đọc trạng thái tham gia/đánh giá riêng của ví đang kết nối ở cùng snapshot blockchain.
+- Thêm nút Tham gia lớp, chọn 1–5 sao và Gửi đánh giá bằng MetaMask cho vai trò Sinh viên.
+- Diễn giải lỗi contract bằng tiếng Việt: lớp không tồn tại, tham gia trùng, chưa tham gia, đánh giá trùng, cổng đóng và điểm không hợp lệ.
+- Giữ tương thích đọc Admin/Giảng viên với contract tiếng Việt cũ; hiển thị rõ bản đó chưa hỗ trợ luồng Sinh viên.
+- Bổ sung kiểm thử Web3 trọn luồng Sinh viên: tạo lớp, tham gia, mở cổng, gửi điểm và chặn thao tác trùng.
+
+### Kiểm tra và việc tiếp theo
+
+- Contract: 20/20 ca đạt; Web3: 11/11 ca đạt; frontend build thành công.
+- [x] Deploy `contracts/DecentralizedEduEvaluation.sol` hiện tại lên Sepolia, đặt địa chỉ mới vào `.env` và đổi `VITE_CONTRACT_ABI=english`.
+- Giao dịch deploy do người dùng tự xác nhận trong MetaMask; tác nhân hỗ trợ không truy cập private key hoặc seed phrase.
+
+### Deploy Sepolia
+
+- Người dùng đã deploy contract đầy đủ tại `0xe5d259F7bF6025883f61F5a688D865B75d49Fb0B` bằng ví `0x417c2EFdddF3e4A89e3C651e557246E6B04B7F0e`.
+- Đã xác minh qua RPC Sepolia: có bytecode, đúng Admin, `courseCount = 0` và `evaluationOpen = false`.
+- Đã cập nhật `.env` sang địa chỉ mới và `VITE_CONTRACT_ABI=english`; build frontend thành công.
