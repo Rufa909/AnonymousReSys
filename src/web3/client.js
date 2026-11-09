@@ -1,0 +1,137 @@
+import { BrowserProvider, Contract, Interface, ZeroAddress, getAddress, isAddress, toUtf8Bytes } from 'ethers';
+import { contractDefinition } from './contract.js';
+
+export const sameAddress = (a, b) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
+export function walletAddress(value) {
+  const address = String(value || '').trim();
+  if (!isAddress(address) || sameAddress(address, ZeroAddress)) throw new Error('Địa chỉ ví/contract phải là địa chỉ Ethereum hợp lệ và khác địa chỉ zero.');
+  return getAddress(address);
+}
+export function formatWeb3Error(error) {
+  const code = error?.code ?? error?.info?.error?.code;
+  if (code === 4001 || code === 'ACTION_REJECTED') return 'Bạn đã từ chối yêu cầu trong MetaMask.';
+  if (code === -32002 || error?.info?.error?.code === -32002) return 'MetaMask đang có yêu cầu chờ xử lý. Hãy mở ví để xử lý trước.';
+  if (code === 'INSUFFICIENT_FUNDS') return 'Ví chưa đủ ETH trên mạng thử nghiệm để trả phí giao dịch.';
+  if (code === 'CALL_EXCEPTION') {
+    const message = String(error.revert?.name || error.shortMessage || '');
+    if (/UnauthorizedAdmin|KhongPhaiAdmin/.test(message)) return 'Chỉ ví Admin của contract được thực hiện thao tác này.';
+    if (/AlreadyApproved|DaDuocDuyet/.test(message)) return 'Ví giảng viên này đã được phê duyệt.';
+    if (/TeacherNotApproved|ChuaDuocDuyet/.test(message)) return 'Ví giảng viên chưa được Admin phê duyệt.';
+    if (/InvalidCourseName|TenHocPhanKhongHopLe/.test(message)) return 'Tên học phần không hợp lệ.';
+    return 'Contract từ chối thao tác. Kiểm tra quyền, dữ liệu và phiên bản ABI đã cấu hình.';
+  }
+  return error?.shortMessage || error?.message || 'Không thể xử lý yêu cầu blockchain.';
+}
+
+export class SchoolChainClient {
+  constructor(injected, config) {
+    if (!injected?.request) throw new Error('Chưa tìm thấy MetaMask. Hãy mở website trong trình duyệt đã cài MetaMask.');
+    this.address = walletAddress(config.address);
+    this.chainId = BigInt(config.chainId || 11155111);
+    if (this.chainId <= 0n) throw new Error('Chain ID không hợp lệ.');
+    const { abi, methods } = contractDefinition(config.abiVersion);
+    this.injected = injected;
+    this.methods = methods;
+    this.abi = abi;
+    this.provider = new BrowserProvider(injected, 'any', { cacheTimeout: -1 });
+    this.contract = new Contract(this.address, abi, this.provider);
+  }
+  async identity(requestAccess = false) {
+    const accounts = await this.injected.request({ method: requestAccess ? 'eth_requestAccounts' : 'eth_accounts' });
+    if (!accounts.length) throw new Error('Chưa có tài khoản ví được kết nối. Hãy kết nối MetaMask.');
+    const chain = BigInt(await this.injected.request({ method: 'eth_chainId' }));
+    if (chain !== this.chainId) {
+      const error = new Error(`Ví đang ở mạng ${chain}. Hãy chuyển sang ${this.chainId === 11155111n ? 'Sepolia' : `mạng ${this.chainId}`} rồi kết nối lại.`);
+      error.code = 'WRONG_CHAIN';
+      throw error;
+    }
+    return walletAddress(accounts[0]);
+  }
+  async assertIdentity(expected) {
+    if (!sameAddress(await this.identity(), expected)) throw new Error('Tài khoản ví đã thay đổi. Hãy tải lại dữ liệu trước khi thao tác.');
+  }
+  async snapshot(account, watchedWallets = []) {
+    await this.assertIdentity(account);
+    const block = await this.provider.getBlockNumber();
+    if (await this.provider.getCode(this.address, block) === '0x') throw new Error('Địa chỉ cấu hình không có smart contract trên mạng đang chọn.');
+    const m = this.methods, read = { blockTag: block };
+    let admin, approved, evaluationOpen, count;
+    try {
+      [admin, approved, evaluationOpen, count] = await Promise.all([
+        this.contract[m.admin](read), this.contract[m.approved](account, read),
+        this.contract[m.open](read), this.contract[m.count](read),
+      ]);
+    } catch { throw new Error('Không đọc được contract. Kiểm tra địa chỉ và ABI tiếng Anh/tiếng Việt của bản đã deploy.'); }
+    // Bound RPC requests; never silently present a truncated list as the full system.
+    if (count > 1000n) throw new Error('Contract có hơn 1.000 lớp. Cần bổ sung phân trang/indexer trước khi tải toàn bộ dữ liệu.');
+    const courses = [];
+    for (let offset = 0; offset < Number(count); offset += 10) {
+      const rows = await Promise.all(Array.from({ length: Math.min(10, Number(count) - offset) }, async (_, index) => {
+        const id = String(offset + index);
+        const [name, teacher, exists, totalScore, reviewCount] = await this.contract[m.course](id, read);
+        return { id, name, teacher, exists, totalScore, reviewCount,
+          score: reviewCount ? Number(totalScore * 10n / reviewCount) / 10 : null };
+      }));
+      courses.push(...rows.filter(row => row.exists));
+    }
+    const addresses = [...new Set([...watchedWallets, account, ...courses.map(row => row.teacher)].map(address => walletAddress(address).toLowerCase()))];
+    const teachers = [];
+    for (let offset = 0; offset < addresses.length; offset += 10) {
+      teachers.push(...await Promise.all(addresses.slice(offset, offset + 10).map(async wallet => ({
+        wallet: getAddress(wallet), approved: await this.contract[m.approved](wallet, read),
+      }))));
+    }
+    await this.assertIdentity(account);
+    return { account, admin, role: sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student',
+      evaluationOpen, courseCount: count, courses, teachers, block };
+  }
+  async lookupTeacher(account, address) {
+    await this.assertIdentity(account);
+    const wallet = walletAddress(address);
+    const approved = await this.contract[this.methods.approved](wallet);
+    await this.assertIdentity(account);
+    return { wallet, approved };
+  }
+  async transact(account, operation, input, onStatus = () => {}) {
+    if (!['approve', 'toggle', 'create'].includes(operation)) throw new Error('Thao tác không được hỗ trợ.');
+    await this.assertIdentity(account);
+    const m = this.methods;
+    const [admin, approved] = await Promise.all([this.contract[m.admin](), this.contract[m.approved](account)]);
+    if (operation === 'create' ? !approved : !sameAddress(admin, account)) throw new Error('Ví hiện tại không có quyền thực hiện thao tác này.');
+    let args = [];
+    if (operation === 'approve') args = [walletAddress(input)];
+    if (operation === 'create') {
+      const name = String(input || '').trim();
+      if (!name || name.length > 120 || toUtf8Bytes(name).length > 480) throw new Error('Tên học phần cần có từ 1 đến 120 ký tự, tối đa 480 byte UTF-8.');
+      args = [name];
+    }
+    // Toggle is non-idempotent. Check displayed state before asking for a signature.
+    if (operation === 'toggle' && typeof input === 'boolean' && await this.contract[m.open]() !== input) {
+      throw new Error('Trạng thái khảo sát đã thay đổi. Hãy tải lại dữ liệu rồi xác nhận lại.');
+    }
+    const signer = await this.provider.getSigner(account);
+    const writer = this.contract.connect(signer)[m[operation]];
+    await writer.staticCall(...args);
+    await this.assertIdentity(account);
+    onStatus({ stage: 'signing', hash: '' });
+    const transaction = await writer(...args);
+    onStatus({ stage: 'pending', hash: transaction.hash });
+    let receipt;
+    try { receipt = await transaction.wait(1); }
+    catch (error) {
+      if (error.code !== 'TRANSACTION_REPLACED' || error.cancelled) throw error;
+      // Only accept an equivalent speed-up, never a replacement with different data.
+      if (!error.replacement || !sameAddress(error.replacement.to, transaction.to) || error.replacement.data !== transaction.data) {
+        throw new Error('Giao dịch đã được thay bằng thao tác khác. Hãy tải lại dữ liệu.');
+      }
+      receipt = error.receipt;
+    }
+    if (!receipt || receipt.status !== 1) throw new Error('Giao dịch thất bại trên blockchain.');
+    onStatus({ stage: 'success', hash: receipt.hash });
+    return receipt;
+  }
+  destroy() { this.provider.destroy(); }
+}
+
+// Exported for validation tests and later member-2 integration.
+export function getContractInterface(version) { return new Interface(contractDefinition(version).abi); }

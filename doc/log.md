@@ -314,3 +314,37 @@ Hoàn thiện phần Smart Contract giai đoạn 2 của thành viên 2 trên co
 - [ ] Thay các thao tác demo bằng giao dịch contract thật.
 - [ ] Thống nhất cách lưu nhận xét văn bản.
 - [ ] Deploy Sepolia và lưu contract address theo biến môi trường.
+
+## Ngày 09/11/2026 — Giai đoạn 3 thành viên 1
+
+### Mục tiêu
+
+Kết nối MetaMask và gắn giao dịch thật cho Admin/Giảng viên; giữ phần Sinh viên giai đoạn 3 cho thành viên 2.
+
+### Công việc đã thực hiện
+
+- Tạo không gian blockchain thật mặc định, tự đọc vai trò theo địa chỉ ví và contract.
+- Tách UI mẫu thành chế độ có nhãn rõ ràng; không dùng số liệu demo trong dashboard thật.
+- Thêm adapter Ethers hỗ trợ ABI tiếng Anh trong repo và ABI tiếng Việt người dùng đang deploy.
+- Gắn approveTeacher/duyetGiangVien, toggleEvaluation/batTatDanhGia và createCourse/taoLopHocPhan vào MetaMask signer.
+- Hiển thị trạng thái giao dịch, link Etherscan và lỗi từ chối ký, sai quyền, sai mạng, sai contract.
+- Xử lý accountsChanged, chainChanged, disconnect; chống kết quả đọc cũ ghi đè phiên mới và khóa thao tác trùng.
+- Lọc thống kê giảng viên theo lớp của ví hiện tại; lớp mới chỉ xuất hiện sau giao dịch thành công và đọc lại contract.
+- Thêm file cấu hình công khai .env.web3.example; bổ sung biến VITE_ vào .env hiện tại, giữ nguyên thông số MySQL.
+- Xác minh qua RPC Sepolia địa chỉ contract do người dùng cung cấp: 0x43ddAB1A429302eec01df753966718c53Ae108D8. viAdmin trả 0x2483e769B6d8f3D035121813998e7151f8bE23C7, tongSoLop bằng 0, cổng khảo sát đóng tại thời điểm đọc.
+- Viết doc/WEB3_THANH_VIEN_1.md và 10 ca test tích hợp Web3 bằng EVM cục bộ.
+
+### Kiểm tra và giới hạn
+
+- Web3: 10/10 ca đạt, có workflow cả ABI Anh/Việt và các tình huống sai mạng, đổi ví, từ chối ký, vượt quyền.
+- Bộ test contract hiện có: 20/20 ca đạt. Tổng cộng 30 ca kiểm thử thành công trong hai bộ.
+- Frontend build thành công; Vite cảnh báo bundle JavaScript khoảng 548 KB sau khi thêm Ethers, có thể tách chunk khi tối ưu hiệu năng.
+- git diff --check không phát hiện lỗi whitespace; .env tiếp tục được Git bỏ qua.
+- Kiểm tra giao diện trong trình duyệt: màn hình blockchain mặc định, báo thiếu MetaMask và chuyển UI mẫu hoạt động.
+- Không ký hoặc gửi giao dịch thay đổi trạng thái trên Sepolia bằng ví người dùng. Cần người dùng demo lại bằng MetaMask thật.
+- Không thêm API MySQL hoặc luồng Sinh viên thật trong phiên này. Danh sách ví giảng viên là các ví đã tra cứu/có lớp, không phải toàn bộ hồ sơ trên MySQL.
+- Adapter giới hạn tải toàn bộ ở 1.000 lớp; quy mô lớn cần phân trang/indexer.
+
+### File liên quan
+
+src/web3/contract.js, src/web3/client.js, src/web3/useSchoolChain.js, src/web3/styles.css, src/components/ChainWorkspace.jsx, src/main.jsx, test/web3/client.test.mjs, package.json, package-lock.json, .env.web3.example, doc/WEB3_THANH_VIEN_1.md.

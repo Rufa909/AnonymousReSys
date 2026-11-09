@@ -8,15 +8,16 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "contracts:compile": "node scripts/compile-contracts.mjs",
-    "contracts:test": "node --test test/contracts/admin-teacher.test.mjs test/contracts/student-review.test.mjs"
+    "contracts:test": "node --test test/contracts/admin-teacher.test.mjs test/contracts/student-review.test.mjs",
+    "web3:test": "node --test test/web3/client.test.mjs"
   },
   "dependencies": {
+    "ethers": "^6.13.0",
     "mysql2": "^3.24.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "ethers": "^6.13.0",
     "hardhat": "3.21.2",
     "solc": "0.8.28",
     "vite": "^6.0.0"

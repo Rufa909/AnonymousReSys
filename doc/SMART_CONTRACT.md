@@ -1,5 +1,3 @@
-# Smart contract giai đoạn 2
-
 ## Phạm vi đã triển khai
 
 Mã chạy thực tế nằm trong `contracts/DecentralizedEduEvaluation.sol`. Phần Solidity trong README là bản thiết kế tham khảo; contract thực tế đã triển khai luồng Admin, Giảng viên và Sinh viên.
