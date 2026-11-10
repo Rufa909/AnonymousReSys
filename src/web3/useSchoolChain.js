@@ -106,7 +106,32 @@ export function useSchoolChain(config) {
     } finally { locked.current = false; setInFlight(false); }
   }, [snapshot, loading, reload]);
   useEffect(() => () => { ++epoch.current; unsubscribe.current?.(); client.current?.destroy(); }, []);
-  return { snapshot, loading, error, transaction, connect, disconnect, switchNetwork,
+  const commentsPage = useCallback(async (courseId, page, pageSize, block) => {
+    if (!snapshot || !client.current) throw new Error('Hãy kết nối ví trước khi đọc nhận xét.');
+    const version = epoch.current;
+    const result = await client.current.commentsPage(snapshot.account, courseId, page, pageSize, block);
+    if (version !== epoch.current) throw new Error('Ví hoặc mạng đã thay đổi. Hãy mở lại danh sách nhận xét.');
+    return result;
+  }, [snapshot]);
+  // Refresh only when the shared gate changes; do not disrupt wallet signing.
+  useEffect(() => {
+    if (!snapshot || snapshot.role !== 'student') return;
+    let active = true, checking = false;
+    const checkGate = async () => {
+      if (checking || locked.current || connecting.current || !client.current) return;
+      checking = true;
+      const version = epoch.current;
+      try {
+        const open = await client.current.contract[client.current.methods.open]();
+        if (active && version === epoch.current && open !== snapshot.evaluationOpen) await reload();
+      } catch { /* Normal reload and comment-page requests report network errors. */ }
+      finally { checking = false; }
+    };
+    const timer = setInterval(checkGate, 15000);
+    window.addEventListener('focus', checkGate);
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', checkGate); };
+  }, [snapshot?.account, snapshot?.role, snapshot?.evaluationOpen, reload]);
+  return { snapshot, loading, error, transaction, connect, disconnect, switchNetwork, commentsPage,
     refresh: () => reload(), lookup, transact,
     busy: loading || inFlight };
 }

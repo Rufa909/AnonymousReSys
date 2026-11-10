@@ -74,8 +74,22 @@ test('Vietnamese student can join, review and read actual updated scores', async
   await api.transact(selected, 'review', { courseId: '0', score: 5, comment: 'Giảng viên hỗ trợ sinh viên rất tốt.' });
   data = await api.snapshot(selected);
   assert.equal(data.courses[0].joined, true); assert.equal(data.courses[0].evaluated, true);
+  assert.equal(data.resultsVisible, false); assert.equal(data.courses[0].score, null);
+  await assert.rejects(() => api.commentsPage(selected, '0'), /sau khi Admin đóng cổng/);
+  selected = adminAddress;
+  await api.transact(selected, 'toggle', true);
+  selected = await student.getAddress();
+  data = await api.snapshot(selected);
+  assert.equal(data.resultsVisible, true);
   assert.equal(data.courses[0].reviewCount, 1n); assert.equal(data.courses[0].score, 5);
-  assert.deepEqual(data.courses[0].comments, ['Giảng viên hỗ trợ sinh viên rất tốt.']);
+  assert.equal(data.courses[0].comments, undefined);
+  const comments = await api.commentsPage(selected, '0');
+  assert.deepEqual(comments.comments, ['Giảng viên hỗ trợ sinh viên rất tốt.']);
+  assert.equal(comments.total, 1n); assert.equal(comments.hasNext, false);
+  selected = adminAddress;
+  await api.transact(selected, 'toggle', false);
+  selected = await student.getAddress();
+  assert.equal((await api.snapshot(selected)).resultsVisible, false);
   await assert.rejects(() => api.transact(selected, 'review', { courseId: '0', score: 4, comment: 'Không thể gửi nhận xét lần thứ hai.' }), error => {
     assert.match(formatWeb3Error(error), /đã đánh giá/); return true;
   });

@@ -1,3 +1,17 @@
+## Quyền xem nhận xét theo cổng đánh giá
+
+- Cổng đang mở: sinh viên gửi đánh giá và theo dõi trạng thái cá nhân; không thấy điểm tổng hợp, tổng lượt đánh giá hoặc nhận xét của các bạn khác.
+- Admin đóng cổng: sinh viên được xem điểm và trang nhận xét của các lớp được cấp quyền, không cần bước công bố riêng.
+- Admin mở lại: kết quả bị ẩn lại trên ứng dụng. Các đánh giá cũ và giới hạn một lần/ví/lớp được giữ nguyên.
+- Admin/Giảng viên vẫn xem được kết quả để quản lý. Web sinh viên kiểm tra cổng mỗi 15 giây và khi quay lại cửa sổ; có thể bấm Tải lại dữ liệu để cập nhật ngay.
+- Không sửa Solidity hay ABI, không cần deploy lại. Đây là chính sách hiển thị/đọc của ứng dụng; không ngăn người dùng đọc trực tiếp dữ liệu công khai trên blockchain.
+
+## Cập nhật giao diện ngày 14/11/2026
+
+- Web thật và UI mẫu dùng chung ChainWorkspace. UI mẫu dùng adapter dữ liệu mô phỏng riêng, có lựa chọn vai trò và nút Bắt đầu trống/Nạp dữ liệu mẫu. Dữ liệu mẫu không ghi lên blockchain và được đặt lại khi rời chế độ hoặc tải lại trang.
+- Mỗi lớp có nút Xem tất cả nhận xét, mở trang riêng trong không gian làm việc. Trang hiển thị thông tin học phần, điểm tổng hợp và 10 nhận xét/trang, mới nhất trước; việc đọc không cần giao dịch MetaMask. Các trang được cố định tại cùng block; đóng và mở lại để đọc nhận xét mới phát sinh.
+- Thẻ lớp chỉ hiển thị số lượt, điểm và nút thao tác; không hiển thị hoặc tải trước nội dung nhận xét. Nhận xét chỉ được đọc khi mở trang riêng, bỏ giới hạn chung 100 nhận xét. Breadcrumb hiển thị đúng trang đang mở.
+
 ## Kết quả triển khai
 
 Website mặc định mở không gian blockchain thật. MetaMask cung cấp địa chỉ ví; Ethers đọc quyền từ contract để mở Dashboard Admin, Giảng viên hoặc Sinh viên. Các thao tác đã gắn giao dịch gồm duyệt giảng viên, mở/đóng đánh giá, tạo lớp học phần, cấp quyền sinh viên, tham gia lớp và gửi điểm kèm nhận xét. Dữ liệu chỉ được tải lại sau khi giao dịch thành công, không tự tăng số lớp hoặc đổi quyền trước khi giao dịch được xác nhận.

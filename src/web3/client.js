@@ -1,6 +1,7 @@
 import { BrowserProvider, Contract, Interface, ZeroAddress, getAddress, isAddress, toUtf8Bytes } from 'ethers';
 import { contractDefinition } from './contract.js';
 import { normalizeWalletList } from './enrollment.js';
+import { canViewResults, hideCourseResults } from './resultsPolicy.js';
 
 export const sameAddress = (a, b) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
 export function walletAddress(value) {
@@ -125,6 +126,8 @@ export class SchoolChainClient {
     const studentSupported = await this.supportsStudents(count, read, runtimeCode);
     const membershipSupported = runtimeHasFunctions(runtimeCode, this.contract.interface, [m.allowed, m.grant]);
     const commentSupported = Boolean(m.comment) && runtimeHasFunctions(runtimeCode, this.contract.interface, [m.commentsCount, m.comment]);
+    const role = sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student';
+    const resultsVisible = canViewResults(role, evaluationOpen);
     if (studentSupported) {
       for (let offset = 0; offset < courses.length; offset += 10) {
         const states = await Promise.all(courses.slice(offset, offset + 10).map(async course => ({
@@ -136,21 +139,9 @@ export class SchoolChainClient {
         for (const state of states) Object.assign(courses.find(course => course.id === state.id), state);
       }
     }
-    if (commentSupported) {
-      let remaining = 100;
-      for (const course of courses) {
-        const total = Number(course.reviewCount);
-        const take = Math.min(total, 5, remaining);
-        const start = total - take;
-        course.comments = take ? await Promise.all(Array.from({ length: take }, (_, index) =>
-          this.contract[m.comment](course.id, start + index, read))) : [];
-        course.commentsTruncated = start > 0 || (take === 0 && total > 0);
-        remaining -= take;
-      }
-    }
     await this.assertIdentity(account);
-    return { account, admin, role: sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student',
-      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported, membershipSupported, commentSupported };
+    return { account, admin, role,
+      evaluationOpen, courseCount: count, courses: resultsVisible ? courses : courses.map(hideCourseResults), teachers, block, studentSupported, membershipSupported, commentSupported, resultsVisible };
   }
   async supportsStudents(_count, overrides = {}, runtimeCode) {
     // These project contracts are direct deployments, not proxy contracts.
@@ -158,6 +149,30 @@ export class SchoolChainClient {
     const code = runtimeCode ?? await this.provider.getCode(this.address, overrides.blockTag ?? 'latest');
     const m = this.methods;
     return runtimeHasFunctions(code, this.contract.interface, [m.enrolled, m.evaluated, m.join, m.review, m.average]);
+  }
+  async commentsPage(account, courseId, page = 0, pageSize = 10, blockTag) {
+    if (!/^\d+$/.test(String(courseId)) || !Number.isSafeInteger(page) || page < 0 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 20) {
+      throw new Error('Thông tin trang nhận xét không hợp lệ.');
+    }
+    await this.assertIdentity(account);
+    await this.assertResultsVisible(account);
+    const block = blockTag ?? await this.provider.getBlockNumber();
+    const read = { blockTag: block }, m = this.methods;
+    const total = await this.contract[m.commentsCount](courseId, read);
+    const offset = BigInt(page) * BigInt(pageSize);
+    if (offset >= total && page > 0) throw new Error('Trang nhận xét không còn tồn tại. Hãy mở lại danh sách.');
+    const take = Number(total > offset ? (total - offset < BigInt(pageSize) ? total - offset : BigInt(pageSize)) : 0n);
+    const comments = await Promise.all(Array.from({ length: take }, (_, index) =>
+      this.contract[m.comment](courseId, total - offset - 1n - BigInt(index), read)));
+    await this.assertIdentity(account);
+    await this.assertResultsVisible(account);
+    return { comments, total, page, pageSize, block, hasNext: offset + BigInt(take) < total };
+  }
+  async assertResultsVisible(account) {
+    const m = this.methods;
+    const [admin, approved, open] = await Promise.all([this.contract[m.admin](), this.contract[m.approved](account), this.contract[m.open]()]);
+    const role = sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student';
+    if (!canViewResults(role, open)) throw new Error('Cổng đánh giá đang mở. Bạn chỉ được xem kết quả và nhận xét sau khi Admin đóng cổng.');
   }
   async lookupTeacher(account, address) {
     await this.assertIdentity(account);

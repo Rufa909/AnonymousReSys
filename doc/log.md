@@ -1,5 +1,61 @@
 # Nhật ký đồ án Anonymous ReSys
 
+## Ngày 14/11/2026 — Sinh viên xem kết quả sau khi đóng cổng
+
+- Theo yêu cầu mới, dùng chính congDanhGiaDangMo hiện có: cổng mở thì sinh viên không thấy điểm/tổng lượt/nhận xét của các bạn khác; cổng đóng thì xem được. Không có nút hoặc trạng thái công bố riêng, không đổi Solidity/ABI/.env.
+- Admin và giảng viên vẫn xem kết quả để quản lý. Giao diện sinh viên khi đang mở chỉ hiển thị các thống kê cá nhân đã đánh giá/chờ đánh giá và thông báo xem kết quả sau khi đóng cổng.
+- Adapter che kết quả trong snapshot sinh viên, chặn đọc trang nhận xét khi cổng đang mở cả trước và sau RPC; kiểm tra trạng thái mới nhất kể cả trang được cố định block cũ. Giữ trang nhận xét riêng và phân trang.
+- Tự kiểm tra trạng thái cổng mỗi 15 giây và khi quay lại cửa sổ đối với sinh viên; chỉ tải lại dữ liệu khi cổng thay đổi, tránh làm gián đoạn giao dịch đang ký. UI mẫu áp dụng cùng quy tắc.
+- 28/28 test Web3 đạt, gồm đóng/mở lại cổng, giữ trạng thái đã đánh giá và đổi cổng giữa khi tải nhận xét. Build và git diff --check đạt; còn cảnh báo bundle trên 500 kB.
+- Đây là kiểm soát trên ứng dụng; dữ liệu blockchain vẫn công khai. Không cần deploy lại contract.
+
+## Ngày 14/11/2026 — Bỏ chức năng công bố theo yêu cầu
+
+- Gỡ toàn bộ nút, trạng thái, hộp thoại và điều kiện công bố khỏi giao diện thật và mô phỏng; gỡ chính sách ẩn điểm/nhận xét sinh viên.
+- Gỡ ketQuaDaCongBo/congBoKetQua và lỗi/sự kiện liên quan khỏi Solidity và ABI; xóa module resultsPolicy và tài liệu hướng dẫn công bố. Các mục công bố ở bên dưới chỉ là lịch sử thay đổi đã được hủy.
+- Giữ trang nhận xét riêng, phân trang 10 nhận xét và thẻ lớp gọn. Sinh viên xem điểm/nhận xét của các lớp được cấp quyền mà không cần công bố; cổng đóng/mở chỉ kiểm soát gửi đánh giá.
+- 26/26 test Web3, 24/24 test contract đạt; build thành công. Không sửa .env hoặc deploy, tiếp tục dùng contract hiện tại có chức năng nhận xét.
+
+## Ngày 14/11/2026 — Công bố kết quả riêng sau khi đóng cổng
+
+- Thêm ketQuaDaCongBo mặc định false, congBoKetQua chỉ Admin, chặn khi cổng đang mở/công bố trùng; phát sự kiện DaCongBoKetQua. Mở lại cổng đặt trạng thái công bố về false, không xóa đánh giá hoặc đặt lại lượt đánh giá.
+- Adapter nhận diện khả năng công bố, mặc định ẩn kết quả sinh viên nếu contract cũ thiếu chức năng. Snapshot sinh viên trước công bố không chứa điểm/tổng lượt/tổng điểm; đọc nhận xét kiểm tra quyền trước và sau RPC, không cho gọi client trực tiếp để bỏ qua giao diện.
+- UI thêm trạng thái Đã/Chưa công bố, nút Admin công bố và hộp thoại xác nhận. Sinh viên chưa công bố chỉ thấy trạng thái riêng đã đánh giá/chờ đánh giá; ẩn liên kết và chặn mở trang kết quả. Admin/Giảng viên vẫn xem để quản lý.
+- Đồng bộ adapter demo với cùng chính sách. Sau công bố sinh viên xem được; đóng cổng đơn thuần vẫn ẩn; mở lại ẩn trở lại. Không tuyên bố giữ bí mật dữ liệu blockchain hoặc tạo đợt đánh giá mới.
+- Kiểm tra: 25/25 test contract, 29/29 test Web3 đạt; compile Solidity, build và git diff --check đạt. Còn cảnh báo bundle trên 500 kB.
+- Hướng dẫn doc/CONG_BO_KET_QUA.md. Chưa deploy hoặc sửa .env; cần deploy bản mới để công bố trên Sepolia. Dữ liệu contract cũ không tự chuyển sang bản mới.
+
+## Ngày 14/11/2026 — Rút gọn thẻ lớp, trang nhận xét riêng và breadcrumb
+
+- Bỏ toàn bộ nội dung nhận xét khỏi thẻ lớp. Thẻ dùng bố cục flex, tiêu đề và phần thao tác đồng đều; tăng kích thước chữ, điều chỉnh khoảng cách và nút Xem tất cả nhận xét.
+- Chuyển CommentsModal thành CommentsPage: trang riêng trong main, giữ sidebar/header; có tiêu đề học phần, điểm tổng hợp, thông tin giảng viên, danh sách phản hồi và phân trang 10 nhận xét. Có trạng thái tải/lỗi/rỗng, nút thử lại, thứ tự mới nhất trước và nút quay lại khôi phục vị trí cuộn/focus của thẻ lớp.
+- Bỏ đọc trước nội dung nhận xét trong snapshot; chỉ đọc theo trang khi người dùng mở danh sách. Không còn ngân sách chung 100 nhận xét; giảm yêu cầu RPC khi tải danh sách lớp.
+- Breadcrumb bỏ nhãn Blockchain ghi cứng, thay bằng Tổng quan/Phê duyệt giảng viên/Lớp học phần/Nhận xét học phần tương ứng; dùng chung cho web thật và UI mẫu.
+- 26/26 test Web3 đạt sau cập nhật, frontend build và git diff --check đạt; còn cảnh báo bundle trên 500 kB. Computer Use đã quan sát trang nhận xét mẫu có 13 phản hồi, thông tin và điểm 4.6, không còn hộp thoại.
+- Không đổi Solidity hoặc địa chỉ contract; không cần deploy lại.
+
+## Ngày 14/11/2026 — Nhận xét phân trang và đồng bộ UI mẫu
+
+- Thêm nút Xem tất cả nhận xét trên mỗi lớp có đánh giá; hộp thoại đọc 10 nhận xét/trang, mới nhất trước, có trang trước/sau, tải lại khi lỗi và trạng thái đang tải. Chỉ đọc blockchain, không yêu cầu ký giao dịch.
+- commentsPage đọc soNhanXet/layNhanXet tại cùng một block xuyên các trang, kiểm tra tài khoản/mạng trước và sau khi tải, giới hạn tối đa 20 nhận xét/yêu cầu.
+- Bản xem nhanh giữ tối đa 5 nhận xét/lớp, tối đa 100/lần tải. Ưu tiên đúng lớp của giảng viên hoặc lớp sinh viên được cấp quyền; các lớp vượt ngân sách vẫn có nút mở toàn bộ nhận xét phân trang.
+- Thay entry UI mẫu cũ bằng ChainWorkspace dùng chung với web thật, qua adapter dữ liệu mô phỏng riêng. Có chọn ví Admin/Giảng viên/Sinh viên, Bắt đầu trống, Nạp dữ liệu mẫu và địa chỉ ví để sao chép. Seed 13 nhận xét nhất quán với tổng điểm và số lượt để thử phân trang.
+- Demo thực hiện cùng quy tắc duyệt giảng viên, tạo lớp, cấp quyền theo lớp, tham gia, cổng mở và một đánh giá/ví/lớp; cùng giới hạn nội dung 10–500 ký tự và 1.000 byte UTF-8. Không còn ngày nhận xét ghi cứng trong luồng giao diện; không truy cập MetaMask hoặc mạng trong adapter demo.
+- Chuyển nút mở UI mẫu lên thanh trên để truy cập được cả màn hình nhỏ; thêm focus trap và đóng Escape cho hộp thoại nhận xét.
+- Kiểm tra: 26/26 test Web3 đạt, gồm hồi quy ngân sách 100 nhận xét, phân trang và luồng demo; bổ sung kiểm tra commentsPage đọc contract thật trên Hardhat, 8/8 test tiếng Việt đạt sau cập nhật. Build và git diff --check đạt; còn cảnh báo bundle trên 500 kB.
+- Quan sát web đang chạy có nút Xem tất cả nhận xét (2). Chưa hoàn tất thao tác kiểm tra trực quan phân trang trong trình duyệt vì Computer Use phát hiện người dùng đang thao tác cửa sổ; không can thiệp giao dịch.
+- Không sửa Solidity, .env hoặc gửi giao dịch Sepolia; không cần deploy lại. Chuyển chế độ hoặc tải lại trang sẽ tạo lại dữ liệu mô phỏng, không sửa dữ liệu blockchain.
+
+## Ngày 14/11/2026 — Trình diễn trực tiếp Admin → Giảng viên → Sinh viên
+
+- Dùng kỹ năng Computer Use thao tác web localhost:5173 và MetaMask trên Sepolia; người dùng trực tiếp xác nhận giao dịch trong ví.
+- Account 1 (Admin) duyệt Account 2, ví 0x8cF388B4Ccc5F66F5b2CaccB5E49A0410a134a00, làm giảng viên và mở cổng đánh giá.
+- Account 2 tạo lớp Công nghệ Blockchain, ID 0, cấp quyền Account 3: 0xe2868bf2e5C6C593B1a4d5d538e76b6A74Dd5dA3. Xác nhận trước khi cấp quyền, Account 3 không thấy lớp được phép tham gia.
+- Account 3 tham gia lớp và gửi 5 sao kèm nhận xét: Bài giảng rõ ràng, ví dụ thực tế giúp em hiểu cách vận hành smart contract.
+- Xác minh trên giao diện dữ liệu blockchain: 1 lượt đánh giá, điểm 5.0, nhận xét hiển thị, trạng thái Đã đánh giá và không còn nút gửi lại.
+- Giao dịch đánh giá: 0x7e46f491f1828a532b7301c1a7738fe11c58c9fc51228edd691c0a1eaef21220. Contract: 0xcf56964E6594745b21517D4f8F50cCDED87535a9.
+- Để lại trình duyệt ở Account 3, trang lớp học phần hiển thị kết quả; thu nhỏ trang xuống 90% để xem đầy đủ nội dung.
+
 ## Ngày 14/11/2026 — Dọn nội dung giao diện dành cho người dùng
 
 - Bỏ nhãn WEB3 · GIAI ĐOẠN 3 và các nhãn workspace phụ trên tiêu đề, bỏ mô tả giai đoạn 1 trong hộp thoại ví mẫu.
