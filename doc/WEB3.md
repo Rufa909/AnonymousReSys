@@ -1,6 +1,6 @@
 ## Kết quả triển khai
 
-Website mặc định mở không gian blockchain thật. MetaMask cung cấp địa chỉ ví; Ethers đọc quyền từ contract để mở Dashboard Admin, Giảng viên hoặc Sinh viên. Năm thao tác đã gắn giao dịch: duyệt giảng viên, mở/đóng đánh giá, tạo lớp học phần, tham gia lớp và gửi điểm. Dữ liệu chỉ được tải lại sau receipt thành công, không tự tăng số lớp hoặc đổi quyền trước khi giao dịch được xác nhận.
+Website mặc định mở không gian blockchain thật. MetaMask cung cấp địa chỉ ví; Ethers đọc quyền từ contract để mở Dashboard Admin, Giảng viên hoặc Sinh viên. Các thao tác đã gắn giao dịch gồm duyệt giảng viên, mở/đóng đánh giá, tạo lớp học phần, cấp quyền sinh viên, tham gia lớp và gửi điểm kèm nhận xét. Dữ liệu chỉ được tải lại sau khi giao dịch thành công, không tự tăng số lớp hoặc đổi quyền trước khi giao dịch được xác nhận.
 
 Bản UI cũ vẫn có ở nút “Xem bản UI mẫu”, hiển thị nhãn dữ liệu mô phỏng riêng. Hai chế độ không dùng chung state và không trộn số liệu mẫu với contract.
 
@@ -102,7 +102,10 @@ Bộ Web3 gồm 11 ca: đọc trạng thái; duyệt/tạo lớp/toggle; Sinh vi
 - Danh sách giảng viên hiển thị các ví đã tra cứu trong phiên, ví đang kết nối và ví sở hữu lớp. Không khẳng định đó là toàn bộ giảng viên đã duyệt; chưa index TeacherApproved hoặc đọc danh sách hồ sơ MySQL.
 - Tải tối đa 1.000 lớp từ contract theo batch 10 RPC, dừng và báo rõ nếu vượt giới hạn. Cần bổ sung phân trang/indexer cho quy mô lớn.
 - Luồng Sinh viên chỉ hoạt động với contract đầy đủ ABI `english`; địa chỉ Sepolia tiếng Việt cũ chưa có các hàm này.
-- Contract chỉ lưu điểm 1–5, không lưu nội dung nhận xét văn bản.
+- Bản contract mới lưu điểm 1–5 và nhận xét công khai. Giao diện yêu cầu 10–500 ký tự; contract chặn nội dung rỗng, chỉ có khoảng trắng hoặc vượt 1.000 byte UTF-8.
+- Website đọc tối đa 5 nhận xét mới nhất của mỗi lớp và tối đa 100 nhận xét cho một lần tải để tránh quá nhiều yêu cầu RPC.
+- Giao diện không hiển thị ví cạnh nhận xét, nhưng giao dịch blockchain công khai vẫn có thể liên kết người gửi với đánh giá. Hệ thống không bảo đảm ẩn danh mật mã.
+- Địa chỉ contract cũ không tự có chức năng nhận xét. Sau khi sửa Solidity phải triển khai contract mới, cập nhật `VITE_CONTRACT_ADDRESS` và khởi động lại máy chủ phát triển.
 - Chưa thay đổi cơ chế riêng tư hoặc danh sách sinh viên hợp lệ của contract.
 - Quyền Admin được ưu tiên khi một ví đồng thời là Admin và giảng viên; dùng hai tài khoản riêng để demo hai dashboard.
 

@@ -89,7 +89,7 @@ test('review is rejected while the evaluation gate is closed', async () => {
   await taoLopHocPhan();
   await mined(contract.connect(student).thamGiaLop(0));
   await expectRevert(
-    () => contract.connect(student).guiDanhGia.staticCall(0, 5),
+    () => contract.connect(student).guiDanhGia.staticCall(0, 5, 'Nội dung đánh giá hợp lệ'),
     'CongDanhGiaDangDong',
   );
 });
@@ -100,7 +100,7 @@ test('only enrolled students can review an existing course', async () => {
   const address = await student.getAddress();
 
   await expectRevert(
-    () => contract.connect(student).guiDanhGia.staticCall(0, 5),
+    () => contract.connect(student).guiDanhGia.staticCall(0, 5, 'Nội dung đánh giá hợp lệ'),
     'ChuaThamGiaLop',
     [0n, address],
   );
@@ -110,7 +110,7 @@ test('missing courses and scores outside 1 to 5 are rejected', async () => {
   await taoLopHocPhan();
   await mined(contract.batTatDanhGia());
   await expectRevert(
-    () => contract.connect(student).guiDanhGia.staticCall(99, 5),
+    () => contract.connect(student).guiDanhGia.staticCall(99, 5, 'Nội dung đánh giá hợp lệ'),
     'LopKhongTonTai',
     [99n],
   );
@@ -118,11 +118,25 @@ test('missing courses and scores outside 1 to 5 are rejected', async () => {
   await mined(contract.connect(student).thamGiaLop(0));
   for (const score of [0, 6, 100]) {
     await expectRevert(
-      () => contract.connect(student).guiDanhGia.staticCall(0, score),
+      () => contract.connect(student).guiDanhGia.staticCall(0, score, 'Nội dung đánh giá hợp lệ'),
       'DiemKhongHopLe',
       [BigInt(score)],
     );
   }
+});
+
+test('empty, whitespace-only and oversized comments are rejected', async () => {
+  await taoLopHocPhan();
+  await mined(contract.connect(student).thamGiaLop(0));
+  await mined(contract.batTatDanhGia());
+  for (const comment of ['', '   ', 'a'.repeat(1001)]) {
+    await expectRevert(
+      () => contract.connect(student).guiDanhGia.staticCall(0, 5, comment),
+      'NhanXetKhongHopLe',
+    );
+  }
+  assert.equal((await contract.danhSachLop(0)).soLuotDanhGia, 0n);
+  assert.equal(await contract.soNhanXet(0), 0n);
 });
 
 test('a valid review updates totals, status, event and average score', async () => {
@@ -130,24 +144,26 @@ test('a valid review updates totals, status, event and average score', async () 
   await mined(contract.connect(student).thamGiaLop(0));
   await mined(contract.batTatDanhGia());
 
-  const receipt = await mined(contract.connect(student).guiDanhGia(0, 5));
+  const receipt = await mined(contract.connect(student).guiDanhGia(0, 5, 'Giảng viên hỗ trợ sinh viên rất tốt.'));
   const course = await contract.danhSachLop(0);
   assert.equal(course.tongDiem, 5n);
   assert.equal(course.soLuotDanhGia, 1n);
   assert.equal(await contract.sinhVienDaDanhGia(0, await student.getAddress()), true);
   assert.deepEqual([...event(receipt, 'DaGuiDanhGia').args], [0n, 5n]);
   assert.equal(await contract.layDiemTrungBinh(0), 50n);
+  assert.equal(await contract.soNhanXet(0), 1n);
+  assert.equal(await contract.layNhanXet(0, 0), 'Giảng viên hỗ trợ sinh viên rất tốt.');
 });
 
 test('one wallet cannot review the same course twice', async () => {
   await taoLopHocPhan();
   await mined(contract.connect(student).thamGiaLop(0));
   await mined(contract.batTatDanhGia());
-  await mined(contract.connect(student).guiDanhGia(0, 4));
+  await mined(contract.connect(student).guiDanhGia(0, 4, 'Nội dung môn học rõ ràng và hữu ích.'));
   const address = await student.getAddress();
 
   await expectRevert(
-    () => contract.connect(student).guiDanhGia.staticCall(0, 5),
+    () => contract.connect(student).guiDanhGia.staticCall(0, 5, 'Đánh giá lần thứ hai không được phép.'),
     'DaDanhGiaLop',
     [0n, address],
   );
@@ -162,8 +178,8 @@ test('multiple students produce a truncated one-decimal average', async () => {
     await mined(contract.connect(actor).thamGiaLop(0));
   }
   await mined(contract.batTatDanhGia());
-  await mined(contract.connect(student).guiDanhGia(0, 5));
-  await mined(contract.connect(secondStudent).guiDanhGia(0, 4));
+  await mined(contract.connect(student).guiDanhGia(0, 5, 'Bài giảng dễ hiểu và nhiều ví dụ thực tế.'));
+  await mined(contract.connect(secondStudent).guiDanhGia(0, 4, 'Nội dung tốt nhưng cần thêm thời gian thực hành.'));
 
   const course = await contract.danhSachLop(0);
   assert.equal(course.tongDiem, 9n);
@@ -188,7 +204,7 @@ test('permission is specific to a course and outsiders cannot join or review', a
   assert.equal(await contract.sinhVienDuocPhep(1, address), false);
   await expectRevert(() => contract.connect(student).thamGiaLop.staticCall(1), 'ChuaDuocCapQuyenVaoLop', [1n, address]);
   await mined(contract.batTatDanhGia());
-  await expectRevert(() => contract.connect(student).guiDanhGia.staticCall(1, 5), 'ChuaThamGiaLop', [1n, address]);
+  await expectRevert(() => contract.connect(student).guiDanhGia.staticCall(1, 5, 'Nội dung đánh giá hợp lệ'), 'ChuaThamGiaLop', [1n, address]);
   assert.equal((await contract.danhSachLop(1)).soLuotDanhGia, 0n);
 });
 

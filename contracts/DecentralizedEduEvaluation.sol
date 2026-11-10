@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 /// @title Anonymous ReSys - Admin, Giảng viên và Sinh viên
-/// @notice Lưu điểm 1–5; không lưu nhận xét văn bản hoặc bảo đảm ẩn danh mật mã.
+/// @notice Lưu điểm 1–5 và nhận xét; không bảo đảm ẩn danh mật mã.
 contract DecentralizedEduEvaluation {
     // Ví triển khai contract trở thành Admin và không thay đổi được.
     address public immutable viAdmin;
@@ -37,8 +37,13 @@ contract DecentralizedEduEvaluation {
     mapping(uint256 => mapping(address => bool))
         public sinhVienDaDanhGia;
 
+    // Nhận xét không gắn địa chỉ ví trong dữ liệu hiển thị của contract.
+    // Tuy nhiên giao dịch blockchain công khai vẫn có thể được truy vết.
+    mapping(uint256 => string[]) private nhanXetTheoLop;
+
     // Giới hạn theo byte UTF-8, không phải số ký tự.
     uint256 public constant GIOI_HAN_BYTE_TEN_HOC_PHAN = 480;
+    uint256 public constant GIOI_HAN_BYTE_NHAN_XET = 1000;
 
     // Các lỗi.
     error KhongPhaiAdmin(address viGoi);
@@ -52,6 +57,8 @@ contract DecentralizedEduEvaluation {
     error DaDanhGiaLop(uint256 maLop, address viSinhVien);
     error CongDanhGiaDangDong();
     error DiemKhongHopLe(uint256 diem);
+    error NhanXetKhongHopLe();
+    error ChiSoNhanXetKhongHopLe(uint256 chiSo);
     error KhongCoQuyenQuanLyLop(uint256 maLop, address viGoi);
     error ChuaDuocCapQuyenVaoLop(uint256 maLop, address viSinhVien);
     error DanhSachViKhongHopLe();
@@ -199,8 +206,12 @@ contract DecentralizedEduEvaluation {
         emit SinhVienDaVaoLop(_maLop, msg.sender);
     }
 
-    /// @notice Gửi một điểm 1–5 cho lớp đã tham gia khi cổng đánh giá mở.
-    function guiDanhGia(uint256 _maLop, uint256 _diem) external {
+    /// @notice Gửi một điểm 1–5 và nhận xét cho lớp đã tham gia khi cổng mở.
+    function guiDanhGia(
+        uint256 _maLop,
+        uint256 _diem,
+        string calldata _nhanXet
+    ) external {
         if (!congDanhGiaDangMo) revert CongDanhGiaDangDong();
 
         LopHocPhan storage lop = danhSachLop[_maLop];
@@ -214,10 +225,44 @@ contract DecentralizedEduEvaluation {
         }
         if (_diem < 1 || _diem > 5) revert DiemKhongHopLe(_diem);
 
+        bytes memory duLieuNhanXet = bytes(_nhanXet);
+        if (
+            duLieuNhanXet.length == 0 ||
+            duLieuNhanXet.length > GIOI_HAN_BYTE_NHAN_XET
+        ) revert NhanXetKhongHopLe();
+
+        bool coNoiDung;
+        for (uint256 i; i < duLieuNhanXet.length; ++i) {
+            if (uint8(duLieuNhanXet[i]) > 32) {
+                coNoiDung = true;
+                break;
+            }
+        }
+        if (!coNoiDung) revert NhanXetKhongHopLe();
+
         sinhVienDaDanhGia[_maLop][msg.sender] = true;
         lop.tongDiem += _diem;
         lop.soLuotDanhGia += 1;
+        nhanXetTheoLop[_maLop].push(_nhanXet);
         emit DaGuiDanhGia(_maLop, _diem);
+    }
+
+    /// @notice Số nhận xét đã gửi cho một lớp.
+    function soNhanXet(uint256 _maLop) external view returns (uint256) {
+        if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
+        return nhanXetTheoLop[_maLop].length;
+    }
+
+    /// @notice Đọc nhận xét theo chỉ số, không trả kèm địa chỉ ví.
+    function layNhanXet(
+        uint256 _maLop,
+        uint256 _chiSo
+    ) external view returns (string memory) {
+        if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
+        if (_chiSo >= nhanXetTheoLop[_maLop].length) {
+            revert ChiSoNhanXetKhongHopLe(_chiSo);
+        }
+        return nhanXetTheoLop[_maLop][_chiSo];
     }
 
     /// @notice Trả điểm trung bình nhân 10, làm tròn xuống (45 nghĩa là 4.5).

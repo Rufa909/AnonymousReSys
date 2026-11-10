@@ -100,11 +100,11 @@ test('student joins a course, submits one score and refreshes personal state', a
   selected = adminAddress;
   await api.transact(selected, 'toggle', false);
   selected = studentAddress;
-  await api.transact(selected, 'review', { courseId: '0', score: 5 });
+  await api.transact(selected, 'review', { courseId: '0', score: 5, comment: 'Giảng viên hỗ trợ sinh viên rất tốt.' });
   data = await api.snapshot(selected);
   assert.equal(data.courses[0].evaluated, true);
   assert.equal(data.courses[0].reviewCount, 1n); assert.equal(data.courses[0].score, 5);
-  await assert.rejects(() => api.transact(selected, 'review', { courseId: '0', score: 4 }), error => {
+  await assert.rejects(() => api.transact(selected, 'review', { courseId: '0', score: 4, comment: 'Không thể gửi nhận xét lần thứ hai.' }), error => {
     assert.match(formatWeb3Error(error), /đã đánh giá/); return true;
   });
 });

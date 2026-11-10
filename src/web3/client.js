@@ -56,6 +56,7 @@ export function formatWeb3Error(error) {
     if (/ReviewAlreadySubmitted|DaDanhGiaLop/.test(message)) return 'Bạn đã đánh giá lớp học phần này.';
     if (/EvaluationClosed|CongDanhGiaDangDong/.test(message)) return 'Cổng đánh giá hiện đang đóng.';
     if (/InvalidScore|DiemKhongHopLe/.test(message)) return 'Điểm đánh giá phải từ 1 đến 5.';
+    if (/NhanXetKhongHopLe/.test(message)) return 'Nhận xét không hợp lệ hoặc vượt quá giới hạn lưu trữ.';
     return 'Contract từ chối thao tác. Kiểm tra quyền, dữ liệu và phiên bản ABI đã cấu hình.';
   }
   return error?.shortMessage || error?.message || 'Không thể xử lý yêu cầu blockchain.';
@@ -123,6 +124,7 @@ export class SchoolChainClient {
     await this.assertIdentity(account);
     const studentSupported = await this.supportsStudents(count, read, runtimeCode);
     const membershipSupported = runtimeHasFunctions(runtimeCode, this.contract.interface, [m.allowed, m.grant]);
+    const commentSupported = Boolean(m.comment) && runtimeHasFunctions(runtimeCode, this.contract.interface, [m.commentsCount, m.comment]);
     if (studentSupported) {
       for (let offset = 0; offset < courses.length; offset += 10) {
         const states = await Promise.all(courses.slice(offset, offset + 10).map(async course => ({
@@ -134,9 +136,21 @@ export class SchoolChainClient {
         for (const state of states) Object.assign(courses.find(course => course.id === state.id), state);
       }
     }
+    if (commentSupported) {
+      let remaining = 100;
+      for (const course of courses) {
+        const total = Number(course.reviewCount);
+        const take = Math.min(total, 5, remaining);
+        const start = total - take;
+        course.comments = take ? await Promise.all(Array.from({ length: take }, (_, index) =>
+          this.contract[m.comment](course.id, start + index, read))) : [];
+        course.commentsTruncated = start > 0 || (take === 0 && total > 0);
+        remaining -= take;
+      }
+    }
     await this.assertIdentity(account);
     return { account, admin, role: sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student',
-      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported, membershipSupported };
+      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported, membershipSupported, commentSupported };
   }
   async supportsStudents(_count, overrides = {}, runtimeCode) {
     // These project contracts are direct deployments, not proxy contracts.
@@ -184,6 +198,13 @@ export class SchoolChainClient {
         const score = Number(input?.score);
         if (!Number.isInteger(score) || score < 1 || score > 5) throw new Error('Điểm đánh giá phải từ 1 đến 5.');
         args.push(score);
+        if (m.comment) {
+          const comment = String(input?.comment || '').trim();
+          if (comment.length < 10 || comment.length > 500 || toUtf8Bytes(comment).length > 1000) {
+            throw new Error('Nhận xét cần có từ 10 đến 500 ký tự và tối đa 1.000 byte UTF-8.');
+          }
+          args.push(comment);
+        }
       }
     }
     // Toggle is non-idempotent. Check displayed state before asking for a signature.

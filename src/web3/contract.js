@@ -5,12 +5,14 @@ const variants = {
     count: 'courseCount', course: 'courses', approve: 'approveTeacher',
     toggle: 'toggleEvaluation', create: 'createCourse', enrolled: 'enrolledStudents',
     evaluated: 'hasEvaluated', join: 'joinCourse', review: 'submitReview', average: 'getAverageScore',
+    commentsCount: 'soNhanXet', comment: 'layNhanXet',
   },
   vietnamese: {
     admin: 'viAdmin', approved: 'giangVienDaDuyet', open: 'congDanhGiaDangMo',
     count: 'tongSoLop', course: 'danhSachLop', approve: 'duyetGiangVien',
     toggle: 'batTatDanhGia', create: 'taoLopHocPhan', enrolled: 'sinhVienDaThamGia',
     evaluated: 'sinhVienDaDanhGia', join: 'thamGiaLop', review: 'guiDanhGia', average: 'layDiemTrungBinh',
+    commentsCount: 'soNhanXet', comment: 'layNhanXet',
   },
 };
 export function contractDefinition(version = 'vietnamese') {
@@ -39,7 +41,9 @@ export function contractDefinition(version = 'vietnamese') {
     `function ${methods.enrolled}(uint256,address) view returns (bool)`,
     `function ${methods.evaluated}(uint256,address) view returns (bool)`,
     `function ${methods.join}(uint256)`,
-    `function ${methods.review}(uint256,uint256)`,
+    ...(methods.comment
+      ? [`function ${methods.review}(uint256,uint256,string)`, `function ${methods.commentsCount}(uint256) view returns (uint256)`, `function ${methods.comment}(uint256,uint256) view returns (string)`]
+      : [`function ${methods.review}(uint256,uint256)`]),
     `function ${methods.average}(uint256) view returns (uint256)`,
     'error CourseNotFound(uint256)', 'error StudentAlreadyEnrolled(uint256,address)',
     'error StudentNotEnrolled(uint256,address)', 'error ReviewAlreadySubmitted(uint256,address)',
@@ -47,6 +51,7 @@ export function contractDefinition(version = 'vietnamese') {
     'error LopKhongTonTai(uint256)', 'error DaThamGiaLop(uint256,address)',
     'error ChuaThamGiaLop(uint256,address)', 'error DaDanhGiaLop(uint256,address)',
     'error CongDanhGiaDangDong()', 'error DiemKhongHopLe(uint256)',
+    'error NhanXetKhongHopLe()', 'error ChiSoNhanXetKhongHopLe(uint256)',
   );
   return { methods, abi };
 }

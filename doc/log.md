@@ -413,6 +413,36 @@ src/web3/contract.js, src/web3/client.js, src/web3/useSchoolChain.js, src/web3/s
 - [x] Deploy `contracts/DecentralizedEduEvaluation.sol` hiện tại lên Sepolia, đặt địa chỉ mới vào `.env` và đổi `VITE_CONTRACT_ABI=english`.
 - Giao dịch deploy do người dùng tự xác nhận trong MetaMask; tác nhân hỗ trợ không truy cập private key hoặc seed phrase.
 
+## Ngày 11/11/2026 — Bổ sung nhận xét khi sinh viên đánh giá
+
+### Công việc đã thực hiện
+
+- Mở rộng `guiDanhGia` để nhận điểm 1–5 kèm nhận xét và lưu nội dung theo lớp trên smart contract.
+- Chặn nhận xét rỗng, chỉ có khoảng trắng hoặc vượt 1.000 byte UTF-8; giao diện yêu cầu từ 10 đến 500 ký tự.
+- Bổ sung `soNhanXet` và `layNhanXet` để đọc nhận xét mà không trả kèm địa chỉ ví.
+- Thêm ô nhập nhận xét, bộ đếm ký tự và cảnh báo rõ dữ liệu blockchain công khai, có thể truy vết giao dịch.
+- Hiển thị tối đa 5 nhận xét gần nhất trên thẻ lớp; giới hạn tổng 100 nhận xét mỗi lần tải dữ liệu.
+- Cập nhật ABI, lớp Web3 và thông báo lỗi tiếng Việt; giữ phát hiện phiên bản contract bằng mã bytecode.
+- Mở rộng kiểm thử contract cho nhận xét hợp lệ, rỗng, khoảng trắng và vượt giới hạn; cập nhật kiểm thử luồng Web3.
+
+### Kiểm tra đã thực hiện
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| Biên dịch Solidity 0.8.28 | Thành công |
+| Kiểm thử smart contract | 24/24 thành công |
+| Kiểm thử Web3 | 21/21 thành công |
+| Dựng giao diện Vite | Thành công |
+| `git diff --check` | Không phát hiện lỗi khoảng trắng |
+
+### Việc tiếp theo
+
+- [ ] Triển khai lại `contracts/DecentralizedEduEvaluation.sol` lên Sepolia bằng ví Admin.
+- [ ] Cập nhật `VITE_CONTRACT_ADDRESS` trong `.env` bằng địa chỉ contract mới và khởi động lại `npm run dev`.
+- [ ] Thiết lập lại dữ liệu trên contract mới: duyệt giảng viên, tạo lớp, cấp quyền sinh viên và mở cổng đánh giá.
+
+Contract đang chạy tại địa chỉ cũ không tự nhận thay đổi này. Không có cơ chế tự động chuyển dữ liệu từ contract cũ sang contract mới.
+
 ### Deploy Sepolia
 
 - Người dùng đã deploy contract đầy đủ tại `0xe5d259F7bF6025883f61F5a688D865B75d49Fb0B` bằng ví `0x417c2EFdddF3e4A89e3C651e557246E6B04B7F0e`.

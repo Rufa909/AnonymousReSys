@@ -11,7 +11,7 @@
 Đề tài nghiên cứu và phát triển một **Ứng dụng phi tập trung (DApp)** nhằm giải quyết bài toán khảo sát và đánh giá chất lượng giảng dạy tại các trường đại học. Các hệ thống khảo sát truyền thống thường gặp vấn đề e ngại rò rỉ danh tính sinh viên hoặc nguy cơ dữ liệu bị can thiệp, chỉnh sửa ngầm trên máy chủ tập trung.
 
 Hệ thống đề xuất khai thác ưu điểm của công nghệ **Blockchain** và **Smart Contract**:
-1. **Tính ẩn danh:** Định danh người dùng thông qua địa chỉ Ví Web3, hoàn toàn không lưu trữ thông tin cá nhân (Tên, MSSV, Email).
+1. **Giảm lộ danh tính trên giao diện:** Hệ thống không lưu tên, MSSV hoặc email và không đặt địa chỉ ví cạnh nhận xét. Tuy nhiên giao dịch blockchain công khai vẫn có thể được truy vết, nên đây không phải ẩn danh mật mã.
 2. **Tính minh bạch & Bất biến:** Kết quả đánh giá được lưu trữ vĩnh viễn trên sổ cái Blockchain, không một cá nhân nào (kể cả Admin/IT) có thể sửa đổi hay xóa bỏ.
 3. **Phân quyền & Chống spam:** Mô hình vận hành kết nối 3 phân vai chặt chẽ. Mỗi sinh viên chỉ được phép đánh giá 1 lần duy nhất cho mỗi lớp học phần mình tham gia.
 
@@ -25,7 +25,7 @@ Hệ thống đề xuất khai thác ưu điểm của công nghệ **Blockchain
 - **Thiếu tính xác thực:** Dễ xảy ra tình trạng khảo sát ảo hoặc người không học môn đó vẫn tham gia đánh giá.
 
 ### 3.2. Mục tiêu đề tài
-- **Bảo mật không công khai danh tính trên giao diện:** Xác thực quyền truy cập thông qua chữ ký số của ví MetaMask, bảo vệ 100% quyền riêng tư của sinh viên.
+- **Không công khai danh tính trên giao diện:** Xác thực quyền truy cập thông qua chữ ký số của ví MetaMask và không hiển thị địa chỉ ví cạnh nhận xét; không tuyên bố bảo vệ ẩn danh tuyệt đối trên blockchain công khai.
 - **Tính bất biến của dữ liệu (Immutable):** Dữ liệu điểm số và phản hồi đã ghi nhận lên Smart Contract không thể bị thao túng.
 - **Kiểm soát truy cập chuẩn xác:** Giảng viên tạo lớp học phần $\rightarrow$ Sinh viên đăng ký tham gia $\rightarrow$ Smart Contract xác thực điều kiện trước khi cho phép gửi đánh giá.
 
@@ -57,7 +57,7 @@ Hệ thống đề xuất khai thác ưu điểm của công nghệ **Blockchain
           │
           ├──► Kết nối ví MetaMask ──► Bấm "Tham gia lớp" (Join Course)
           │
-          └──► Đến đợt đánh giá ──► Gửi điểm (1-5 sao)
+          └──► Đến đợt đánh giá ──► Gửi điểm (1-5 sao) và nhận xét
                                          │
                                          ▼
                             [Smart Contract Kiểm Tra]
