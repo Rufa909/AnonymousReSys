@@ -25,6 +25,10 @@ contract DecentralizedEduEvaluation {
     // Mặc định false: cổng đánh giá đang đóng.
     bool public congDanhGiaDangMo;
 
+    // Danh sách ví thuộc từng lớp, do Admin hoặc giảng viên của lớp cấp quyền.
+    mapping(uint256 => mapping(address => bool)) public sinhVienDuocPhep;
+    uint256 public constant GIOI_HAN_CAP_QUYEN = 100;
+
     // Trạng thái tham gia lớp và đánh giá của từng ví.
     // ID lớp => ví sinh viên => trạng thái.
     mapping(uint256 => mapping(address => bool))
@@ -48,6 +52,10 @@ contract DecentralizedEduEvaluation {
     error DaDanhGiaLop(uint256 maLop, address viSinhVien);
     error CongDanhGiaDangDong();
     error DiemKhongHopLe(uint256 diem);
+    error KhongCoQuyenQuanLyLop(uint256 maLop, address viGoi);
+    error ChuaDuocCapQuyenVaoLop(uint256 maLop, address viSinhVien);
+    error DanhSachViKhongHopLe();
+    event DaCapQuyenThamGiaLop(uint256 indexed maLop, address indexed viSinhVien);
 
     // Các sự kiện.
     event DaDuyetGiangVien(address indexed viGiangVien);
@@ -159,10 +167,30 @@ contract DecentralizedEduEvaluation {
         );
     }
 
-    /// @notice Tham gia lớp đã tồn tại; mỗi ví chỉ tham gia một lần mỗi lớp.
-    /// @dev Theo thiết kế hiện tại, không có danh sách xác minh sinh viên thật.
+    /// @notice Cấp quyền theo danh sách đăng ký học đã được xác minh ngoài blockchain.
+    function capQuyenThamGiaLop(uint256 _maLop, address[] calldata _danhSachVi) external {
+        LopHocPhan storage lop = danhSachLop[_maLop];
+        if (!lop.tonTai) revert LopKhongTonTai(_maLop);
+        if (msg.sender != viAdmin && msg.sender != lop.viGiangVien) {
+            revert KhongCoQuyenQuanLyLop(_maLop, msg.sender);
+        }
+        if (_danhSachVi.length == 0 || _danhSachVi.length > GIOI_HAN_CAP_QUYEN) {
+            revert DanhSachViKhongHopLe();
+        }
+        for (uint256 i; i < _danhSachVi.length; ++i) {
+            address viSinhVien = _danhSachVi[i];
+            if (viSinhVien == address(0)) revert DiaChiViKhongHopLe();
+            if (!sinhVienDuocPhep[_maLop][viSinhVien]) {
+                sinhVienDuocPhep[_maLop][viSinhVien] = true;
+                emit DaCapQuyenThamGiaLop(_maLop, viSinhVien);
+            }
+        }
+    }
+
+    /// @notice Chỉ ví được cấp quyền cho đúng lớp mới có thể tham gia.
     function thamGiaLop(uint256 _maLop) external {
         if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
+        if (!sinhVienDuocPhep[_maLop][msg.sender]) revert ChuaDuocCapQuyenVaoLop(_maLop, msg.sender);
         if (sinhVienDaThamGia[_maLop][msg.sender]) {
             revert DaThamGiaLop(_maLop, msg.sender);
         }
@@ -180,6 +208,7 @@ contract DecentralizedEduEvaluation {
         if (!sinhVienDaThamGia[_maLop][msg.sender]) {
             revert ChuaThamGiaLop(_maLop, msg.sender);
         }
+        if (!sinhVienDuocPhep[_maLop][msg.sender]) revert ChuaDuocCapQuyenVaoLop(_maLop, msg.sender);
         if (sinhVienDaDanhGia[_maLop][msg.sender]) {
             revert DaDanhGiaLop(_maLop, msg.sender);
         }

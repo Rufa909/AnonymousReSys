@@ -1,5 +1,14 @@
 # Nhật ký đồ án Anonymous ReSys
 
+## Ngày 10/11/2026 — Phân quyền sinh viên theo từng lớp
+
+- Thêm sinhVienDuocPhep và capQuyenThamGiaLop, tối đa 100 ví/giao dịch; chỉ Admin hoặc giảng viên sở hữu lớp được cấp quyền. Kiểm tra quyền trong thamGiaLop và guiDanhGia.
+- UI Admin/Giảng viên có hộp thoại nhập danh sách ví, kiểm tra, loại trùng và xem lại trước khi xác nhận MetaMask. Sinh viên chỉ thấy lớp đã được cấp quyền.
+- Adapter nhận diện khả năng phân quyền riêng; contract cũ thiếu khả năng này bị khóa thao tác tham gia/đánh giá. Giữ hỗ trợ tên hàm tiếng Việt.
+- Danh sách đăng ký học và ví cần được đối chiếu ngoài blockchain; chưa thêm SSO, đồng bộ MySQL hoặc thu hồi quyền.
+- Kiểm tra: 23 test contract và 21 test Web3 đạt; build thành công, còn cảnh báo kích thước bundle trên 500 kB.
+- Hướng dẫn: doc/SINH_VIEN_THEO_LOP.md. Chưa deploy, không sửa .env, cần triển khai bản mới để áp dụng kiểm soát này trên Sepolia.
+
 ## Ngày 10/11/2026 — Sửa nhận diện contract lúc được lúc không
 
 - Kiểm tra chỉ có một .env; Vite tại cổng 5173 phục vụ đúng địa chỉ 0x1e15Ad55D073B55b080A5426eC78522EcD0Fa40F và ABI vietnamese. Không thấy cấu hình ngôn ngữ khác ghi đè.

@@ -53,8 +53,16 @@ test('Vietnamese student can join, review and read actual updated scores', async
   selected = teacherAddress;
   await api.transact(selected, 'create', 'Công nghệ Blockchain');
   selected = await student.getAddress();
+  assert.equal((await api.snapshot(selected)).courses[0].allowed, false);
+  await assert.rejects(() => api.transact(selected, 'join', { courseId: '0' }), error => {
+    assert.match(formatWeb3Error(error), /chưa được cấp quyền/); return true;
+  });
+  selected = teacherAddress;
+  await api.transact(selected, 'grant', { courseId: '0', wallets: [await student.getAddress()] });
+  selected = await student.getAddress();
   let data = await api.snapshot(selected);
   assert.equal(data.role, 'student'); assert.equal(data.studentSupported, true);
+  assert.equal(data.membershipSupported, true); assert.equal(data.courses[0].allowed, true);
   assert.equal(data.courses[0].joined, false);
   await api.transact(selected, 'join', { courseId: '0' });
   await assert.rejects(() => api.transact(selected, 'review', { courseId: '0', score: 5 }), error => {

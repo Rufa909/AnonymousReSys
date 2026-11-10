@@ -1,5 +1,6 @@
 import { BrowserProvider, Contract, Interface, ZeroAddress, getAddress, isAddress, toUtf8Bytes } from 'ethers';
 import { contractDefinition } from './contract.js';
+import { normalizeWalletList } from './enrollment.js';
 
 export const sameAddress = (a, b) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
 export function walletAddress(value) {
@@ -42,6 +43,9 @@ export function formatWeb3Error(error) {
   if (code === 'INSUFFICIENT_FUNDS') return 'Ví chưa đủ ETH trên mạng thử nghiệm để trả phí giao dịch.';
   if (code === 'CALL_EXCEPTION') {
     const message = String(error.revert?.name || error.shortMessage || '');
+    if (/ChuaDuocCapQuyenVaoLop/.test(message)) return 'Ví của bạn chưa được cấp quyền tham gia lớp này.';
+    if (/KhongCoQuyenQuanLyLop/.test(message)) return 'Chỉ Admin hoặc giảng viên của lớp được cấp quyền cho sinh viên.';
+    if (/DanhSachViKhongHopLe/.test(message)) return 'Danh sách phải có từ 1 đến 100 ví.';
     if (/UnauthorizedAdmin|KhongPhaiAdmin/.test(message)) return 'Chỉ ví Admin của contract được thực hiện thao tác này.';
     if (/AlreadyApproved|DaDuocDuyet/.test(message)) return 'Ví giảng viên này đã được phê duyệt.';
     if (/TeacherNotApproved|ChuaDuocDuyet/.test(message)) return 'Ví giảng viên chưa được Admin phê duyệt.';
@@ -118,10 +122,12 @@ export class SchoolChainClient {
     }
     await this.assertIdentity(account);
     const studentSupported = await this.supportsStudents(count, read, runtimeCode);
+    const membershipSupported = runtimeHasFunctions(runtimeCode, this.contract.interface, [m.allowed, m.grant]);
     if (studentSupported) {
       for (let offset = 0; offset < courses.length; offset += 10) {
         const states = await Promise.all(courses.slice(offset, offset + 10).map(async course => ({
           id: course.id,
+          allowed: membershipSupported ? await this.contract[m.allowed](course.id, account, read) : false,
           joined: await this.contract[m.enrolled](course.id, account, read),
           evaluated: await this.contract[m.evaluated](course.id, account, read),
         })));
@@ -130,7 +136,7 @@ export class SchoolChainClient {
     }
     await this.assertIdentity(account);
     return { account, admin, role: sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student',
-      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported };
+      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported, membershipSupported };
   }
   async supportsStudents(_count, overrides = {}, runtimeCode) {
     // These project contracts are direct deployments, not proxy contracts.
@@ -147,9 +153,15 @@ export class SchoolChainClient {
     return { wallet, approved };
   }
   async transact(account, operation, input, onStatus = () => {}) {
-    if (!['approve', 'toggle', 'create', 'join', 'review'].includes(operation)) throw new Error('Thao tác không được hỗ trợ.');
+    if (!['approve', 'toggle', 'create', 'join', 'review', 'grant'].includes(operation)) throw new Error('Thao tác không được hỗ trợ.');
     await this.assertIdentity(account);
     const m = this.methods;
+    if (['join', 'review', 'grant'].includes(operation)) {
+      const code = await this.provider.getCode(this.address);
+      if (!runtimeHasFunctions(code, this.contract.interface, [m.allowed, m.grant])) {
+        throw new Error('Contract chưa hỗ trợ phân quyền sinh viên theo lớp. Cần deploy bản mới và cập nhật địa chỉ contract.');
+      }
+    }
     if ((operation === 'join' || operation === 'review') && !await this.supportsStudents(await this.contract[m.count]())) {
       throw new Error('Contract đang cấu hình chưa hỗ trợ chức năng Sinh viên.');
     }
@@ -163,10 +175,11 @@ export class SchoolChainClient {
       if (!name || name.length > 120 || toUtf8Bytes(name).length > 480) throw new Error('Tên học phần cần có từ 1 đến 120 ký tự, tối đa 480 byte UTF-8.');
       args = [name];
     }
-    if (operation === 'join' || operation === 'review') {
+    if (['join', 'review', 'grant'].includes(operation)) {
       const courseId = String(input?.courseId ?? '');
       if (!/^\d+$/.test(courseId)) throw new Error('ID lớp học phần không hợp lệ.');
       args = [BigInt(courseId)];
+      if (operation === 'grant') args.push(normalizeWalletList(input?.wallets));
       if (operation === 'review') {
         const score = Number(input?.score);
         if (!Number.isInteger(score) || score < 1 || score > 5) throw new Error('Điểm đánh giá phải từ 1 đến 5.');

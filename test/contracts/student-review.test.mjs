@@ -40,6 +40,7 @@ async function mined(transaction) {
 async function taoLopHocPhan(name = 'Công nghệ Blockchain') {
   await mined(contract.duyetGiangVien(await viGiangVien.getAddress()));
   await mined(contract.connect(viGiangVien).taoLopHocPhan(name));
+  await mined(contract.capQuyenThamGiaLop(0, [await student.getAddress(), await secondStudent.getAddress()]));
 }
 
 async function expectRevert(call, name, args = []) {
@@ -178,4 +179,43 @@ test('average is zero without reviews and missing courses are rejected', async (
     'LopKhongTonTai',
     [1n],
   );
+});
+
+test('permission is specific to a course and outsiders cannot join or review', async () => {
+  await taoLopHocPhan();
+  await mined(contract.connect(viGiangVien).taoLopHocPhan('Lớp khác'));
+  const address = await student.getAddress();
+  assert.equal(await contract.sinhVienDuocPhep(1, address), false);
+  await expectRevert(() => contract.connect(student).thamGiaLop.staticCall(1), 'ChuaDuocCapQuyenVaoLop', [1n, address]);
+  await mined(contract.batTatDanhGia());
+  await expectRevert(() => contract.connect(student).guiDanhGia.staticCall(1, 5), 'ChuaThamGiaLop', [1n, address]);
+  assert.equal((await contract.danhSachLop(1)).soLuotDanhGia, 0n);
+});
+
+test('only admin or the owner teacher can grant membership, duplicate grants are harmless', async () => {
+  await taoLopHocPhan();
+  const address = await secondStudent.getAddress();
+  await mined(contract.duyetGiangVien(address));
+  await expectRevert(() => contract.connect(secondStudent).capQuyenThamGiaLop.staticCall(0, [address]), 'KhongCoQuyenQuanLyLop', [0n, address]);
+  await mined(contract.connect(viGiangVien).taoLopHocPhan('Lớp mới'));
+  const studentAddress = await student.getAddress();
+  await expectRevert(() => contract.connect(student).capQuyenThamGiaLop.staticCall(1, [address]), 'KhongCoQuyenQuanLyLop', [1n, studentAddress]);
+  const receipt = await mined(contract.connect(viGiangVien).capQuyenThamGiaLop(1, [studentAddress, studentAddress]));
+  assert.equal(receipt.logs.length, 1);
+  assert.equal(await contract.sinhVienDuocPhep(1, studentAddress), true);
+  assert.equal((await mined(contract.capQuyenThamGiaLop(1, [studentAddress]))).logs.length, 0);
+});
+
+test('invalid batches revert atomically, missing classes fail, and 100 wallets are accepted', async () => {
+  await taoLopHocPhan();
+  await mined(contract.connect(viGiangVien).taoLopHocPhan('Lớp mới'));
+  const address = await student.getAddress();
+  await expectRevert(() => contract.capQuyenThamGiaLop.staticCall(99, [address]), 'LopKhongTonTai', [99n]);
+  await expectRevert(() => contract.capQuyenThamGiaLop.staticCall(1, []), 'DanhSachViKhongHopLe');
+  const wallets = Array.from({ length: 100 }, (_, i) => `0x${(i + 100).toString(16).padStart(40, '0')}`);
+  await expectRevert(() => contract.capQuyenThamGiaLop.staticCall(1, [...wallets, address]), 'DanhSachViKhongHopLe');
+  await assert.rejects(async () => mined(contract.capQuyenThamGiaLop(1, [address, '0x0000000000000000000000000000000000000000'], { gasLimit: 1000000 })));
+  assert.equal(await contract.sinhVienDuocPhep(1, address), false);
+  await mined(contract.capQuyenThamGiaLop(1, wallets));
+  assert.equal(await contract.sinhVienDuocPhep(1, wallets[99]), true);
 });

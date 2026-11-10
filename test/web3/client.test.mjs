@@ -84,6 +84,7 @@ test('student joins a course, submits one score and refreshes personal state', a
   await api.transact(adminAddress, 'approve', teacherAddress);
   selected = teacherAddress;
   await api.transact(selected, 'create', 'An toàn Blockchain');
+  await api.transact(selected, 'grant', { courseId: '0', wallets: [studentAddress] });
 
   selected = studentAddress;
   let data = await api.snapshot(selected);

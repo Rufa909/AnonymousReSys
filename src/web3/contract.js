@@ -14,9 +14,14 @@ const variants = {
   },
 };
 export function contractDefinition(version = 'vietnamese') {
-  const methods = variants[version];
-  if (!methods) throw new Error('Phiên bản ABI phải là english hoặc vietnamese.');
+  if (!variants[version]) throw new Error('Phiên bản ABI phải là english hoặc vietnamese.');
+  const methods = { ...variants[version], allowed: 'sinhVienDuocPhep', grant: 'capQuyenThamGiaLop' };
   const abi = [
+    'function sinhVienDuocPhep(uint256,address) view returns (bool)',
+    'function capQuyenThamGiaLop(uint256,address[])',
+    'error KhongCoQuyenQuanLyLop(uint256,address)',
+    'error ChuaDuocCapQuyenVaoLop(uint256,address)',
+    'error DanhSachViKhongHopLe()',
     `function ${methods.admin}() view returns (address)`,
     `function ${methods.approved}(address) view returns (bool)`,
     `function ${methods.open}() view returns (bool)`,
