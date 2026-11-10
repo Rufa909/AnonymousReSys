@@ -16,7 +16,7 @@ export function useSchoolChain(config) {
   const [error, setError] = useState('');
   const [transaction, setTransaction] = useState(null);
   const [inFlight, setInFlight] = useState(false);
-  const client = useRef(null), epoch = useRef(0), watches = useRef([]), locked = useRef(false), unsubscribe = useRef(null);
+  const client = useRef(null), epoch = useRef(0), watches = useRef([]), locked = useRef(false), connecting = useRef(false), unsubscribe = useRef(null);
   const reload = useCallback(async (requestAccess = false) => {
     const version = ++epoch.current;
     setLoading(true); setError('');
@@ -34,15 +34,26 @@ export function useSchoolChain(config) {
   const disconnect = useCallback(() => {
     ++epoch.current; setSnapshot(null); setLoading(false); setError(''); setTransaction(null);
     unsubscribe.current?.(); unsubscribe.current = null;
-    // Keep provider alive while a submitted transaction may still be waiting.
+    // Buttons prevent disconnect while sending. Do not reuse a stale provider
+    // instance (including instances created before a Vite hot update).
+    if (!locked.current) { client.current?.destroy(); client.current = null; }
   }, []);
   const connect = useCallback(async () => {
-    if (locked.current) return;
+    if (locked.current || connecting.current) return;
+    connecting.current = true;
     try {
-      if (!client.current) client.current = new SchoolChainClient(metaMaskProvider(), config);
+      ++epoch.current;
+      unsubscribe.current?.(); unsubscribe.current = null;
+      client.current?.destroy();
+      client.current = new SchoolChainClient(metaMaskProvider(), config);
       if (!unsubscribe.current) {
         const wallet = client.current.injected;
-        const changed = () => { ++epoch.current; setSnapshot(null); setTransaction(null); void reload(); };
+        const changed = () => {
+          // eth_requestAccounts can itself emit accountsChanged. Its active
+          // connect flow already reads the newest identity; avoid a second load.
+          if (connecting.current) return;
+          ++epoch.current; setSnapshot(null); setTransaction(null); void reload();
+        };
         wallet.on?.('accountsChanged', changed); wallet.on?.('chainChanged', changed); wallet.on?.('disconnect', changed);
         unsubscribe.current = () => {
           wallet.removeListener?.('accountsChanged', changed); wallet.removeListener?.('chainChanged', changed); wallet.removeListener?.('disconnect', changed);
@@ -50,6 +61,7 @@ export function useSchoolChain(config) {
       }
       await reload(true);
     } catch (failure) { setError(formatWeb3Error(failure)); }
+    finally { connecting.current = false; }
   }, [config, reload]);
   const switchNetwork = useCallback(async () => {
     try {

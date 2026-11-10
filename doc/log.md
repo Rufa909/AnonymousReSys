@@ -1,5 +1,43 @@
 # Nhật ký đồ án Anonymous ReSys
 
+## Ngày 10/11/2026 — Sửa nhận diện contract lúc được lúc không
+
+- Kiểm tra chỉ có một .env; Vite tại cổng 5173 phục vụ đúng địa chỉ 0x1e15Ad55D073B55b080A5426eC78522EcD0Fa40F và ABI vietnamese. Không thấy cấu hình ngôn ngữ khác ghi đè.
+- Xác nhận bytecode Sepolia có đủ selector cho sinhVienDaThamGia, sinhVienDaDanhGia, thamGiaLop, guiDanhGia, layDiemTrungBinh.
+- Loại bỏ cách cố gọi lớp không tồn tại rồi dựa vào lỗi RPC để xác định khả năng Sinh viên. Với các contract Solidity deploy trực tiếp của dự án, đối chiếu selector PUSH4 trong runtime bytecode, không tìm chuỗi tùy ý trong PUSH data. Cách này không nhằm hỗ trợ proxy contract.
+- Thêm test RPC bỏ dữ liệu revert: tải lặp 4 lần vẫn hỗ trợ Sinh viên và không còn gọi thử hàm gây revert. RPC lỗi đọc code phải báo lỗi, không đổi thành “không hỗ trợ”.
+- Kết nối lại tạo client mới, hủy listener cũ; ngắt kết nối không giữ lại instance cũ khi không có giao dịch đang chờ. Chặn bấm kết nối trùng và tránh accountsChanged từ chính yêu cầu kết nối gây tải song song.
+- Đồng bộ bộ test contract đang gọi tên tiếng Anh sang tên tiếng Việt thực tế; fixture chuyển tên tiếng Anh chỉ dùng kiểm tra tương thích adapter. web3:test chạy cả các test tiếng Việt mới.
+- 20/20 test contract và 19/19 test Web3 đạt; đọc contract Sepolia 3 lần liên tiếp đều studentSupported=true, số lớp 0 tại thời điểm đọc. Giữ thư mục test vì còn được sử dụng; không đưa test vào bundle website.
+- Không sửa contract/deploy, không đổi .env và không gửi giao dịch Sepolia.
+
+## Ngày 10/11/2026 — Đặt ABI mặc định tiếng Việt và xử lý lỗi MetaMask lồng nhau
+
+- Kiểm tra .env: address 0x1e15Ad55D073B55b080A5426eC78522EcD0Fa40F, ABI vietnamese, chain ID 11155111.
+- Dùng adapter đọc trực tiếp RPC Sepolia: studentSupported=true, số lớp bằng 0 tại thời điểm kiểm tra. Không gửi giao dịch.
+- Chuyển mặc định contractDefinition từ english sang vietnamese; nhánh english vẫn giữ để tương thích bản deploy cũ và các lời gọi chọn ngôn ngữ rõ ràng.
+- Nhận diện lỗi LopKhongTonTai từ revert.name hoặc dữ liệu lỗi MetaMask/RPC lồng nhau; tránh nhận sai khả năng Sinh viên chỉ vì RPC không cung cấp revert.name. Lỗi mạng vẫn được báo, không coi là contract thiếu hàm.
+- 5/5 test tập trung tiếng Việt đạt; frontend build thành công, còn cảnh báo kích thước bundle. Cần khởi động lại Vite và tải lại trang để bảo đảm dùng cấu hình và bundle mới.
+
+## Ngày 10/11/2026 — Khôi phục địa chỉ deploy khi Remix không hiện instance
+
+- Remix hiện giao dịch constructor dấu xanh nhưng lỗi giao diện đọc result, không thêm instance vào Deployed Contracts.
+- Đọc receipt Sepolia tại block 12105381, transaction index 25: status 1, from ví Admin 0x2483e769B6d8f3D035121813998e7151f8bE23C7, contract tạo tại 0x1e15Ad55D073B55b080A5426eC78522EcD0Fa40F.
+- Transaction hash: 0xde6a34a6b5c052c2405f679e81165cf6bdb76c261efc0fe7e7c05177f00d2046.
+- Xác minh viAdmin đúng ví; tongSoLop bằng 0. Mô phỏng layDiemTrungBinh(0) và thamGiaLop(0) trả LopKhongTonTai; guiDanhGia(0,5) trả CongDanhGiaDangDong, xác nhận đủ hàm Sinh viên.
+- Cập nhật riêng VITE_CONTRACT_ADDRESS trong .env sang địa chỉ mới, giữ nguyên ABI vietnamese, Sepolia và cấu hình MySQL. .env vẫn được Git bỏ qua.
+- Các kiểm tra đều là đọc receipt/eth_call, không gửi thêm giao dịch hoặc deploy. Người dùng có thể dùng Add Contract với địa chỉ đã khôi phục.
+
+## Ngày 10/11/2026 — Sửa nhận diện Sinh viên cho ABI tiếng Việt
+
+- Kiểm tra ảnh và mã nguồn thực tế: adapter vietnamese thiếu tên hàm Sinh viên; thông báo giao diện còn yêu cầu đổi sang english.
+- Bổ sung mapping và ABI cho sinhVienDaThamGia, sinhVienDaDanhGia, thamGiaLop, guiDanhGia, layDiemTrungBinh cùng các lỗi tiếng Việt.
+- Kiểm tra khả năng Sinh viên từ contract thực tế thay vì chỉ nhìn cấu hình ABI. Contract cũ vẫn tải được dữ liệu nhưng không hiện/gửi chức năng Sinh viên chưa hỗ trợ.
+- Thay thông báo sai về đổi ngôn ngữ bằng hướng dẫn deploy bản đầy đủ và cập nhật địa chỉ, giữ ABI khớp contract.
+- Đọc Sepolia tại địa chỉ đang cấu hình 0x43ddAB1A429302eec01df753966718c53Ae108D8: tongSoLop trả 1 nhưng layDiemTrungBinh(0) revert rỗng, xác nhận địa chỉ hiện tại vẫn chưa có hàm mới.
+- node --test test/web3/vietnamese.test.mjs: 3/3 ca đạt, gồm Sinh viên tiếng Việt tham gia/gửi điểm, bản cũ bị chặn và bản mới chưa có lớp vẫn được nhận diện.
+- Frontend build thành công; git diff --check không có lỗi whitespace. Không đổi địa chỉ .env và không gửi giao dịch Sepolia.
+
 ## Thông tin đồ án
 
 - **Học phần:** Blockchain.

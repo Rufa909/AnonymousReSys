@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "contracts:compile": "node scripts/compile-contracts.mjs",
     "contracts:test": "node --test test/contracts/admin-teacher.test.mjs test/contracts/student-review.test.mjs",
-    "web3:test": "node --test test/web3/client.test.mjs"
+    "web3:test": "node --test test/web3/*.test.mjs"
   },
   "dependencies": {
     "ethers": "^6.13.0",

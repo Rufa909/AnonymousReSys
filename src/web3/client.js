@@ -7,6 +7,34 @@ export function walletAddress(value) {
   if (!isAddress(address) || sameAddress(address, ZeroAddress)) throw new Error('Địa chỉ ví/contract phải là địa chỉ Ethereum hợp lệ và khác địa chỉ zero.');
   return getAddress(address);
 }
+export function decodedRevertName(error, contractInterface) {
+  if (error?.revert?.name) return error.revert.name;
+  // MetaMask/RPC may wrap revert bytes in data.originalError or info.error.
+  const queue = [error], seen = new Set();
+  for (let index = 0; index < queue.length && index < 30; index++) {
+    const value = queue[index];
+    if (typeof value === 'string' && /^0x[0-9a-fA-F]{8,}$/.test(value)) {
+      try { const parsed = contractInterface.parseError(value); if (parsed) return parsed.name; } catch { /* Not ABI-encoded revert data. */ }
+    }
+    if (!value || typeof value !== 'object' || seen.has(value)) continue;
+    seen.add(value);
+    queue.push(value.data, value.error, value.originalError, value.info?.error, value.cause);
+  }
+  return null;
+}
+export function runtimeHasFunctions(bytecode, contractInterface, methods) {
+  // Solidity's direct dispatcher uses PUSH4 selectors. Walk instructions rather
+  // than searching arbitrary substrings inside PUSH data or reverting eth_call.
+  if (!/^0x(?:[0-9a-fA-F]{2})+$/.test(bytecode)) return false;
+  const bytes = bytecode.slice(2).toLowerCase(), selectors = new Set();
+  for (let offset = 0; offset < bytes.length;) {
+    const opcode = parseInt(bytes.slice(offset, offset + 2), 16);
+    offset += 2;
+    if (opcode === 0x63) selectors.add(bytes.slice(offset, offset + 8));
+    if (opcode >= 0x60 && opcode <= 0x7f) offset += (opcode - 0x5f) * 2;
+  }
+  return methods.every(method => selectors.has(contractInterface.getFunction(method).selector.slice(2).toLowerCase()));
+}
 export function formatWeb3Error(error) {
   const code = error?.code ?? error?.info?.error?.code;
   if (code === 4001 || code === 'ACTION_REJECTED') return 'Bạn đã từ chối yêu cầu trong MetaMask.';
@@ -18,12 +46,12 @@ export function formatWeb3Error(error) {
     if (/AlreadyApproved|DaDuocDuyet/.test(message)) return 'Ví giảng viên này đã được phê duyệt.';
     if (/TeacherNotApproved|ChuaDuocDuyet/.test(message)) return 'Ví giảng viên chưa được Admin phê duyệt.';
     if (/InvalidCourseName|TenHocPhanKhongHopLe/.test(message)) return 'Tên học phần không hợp lệ.';
-    if (/CourseNotFound/.test(message)) return 'Lớp học phần không tồn tại.';
-    if (/StudentAlreadyEnrolled/.test(message)) return 'Bạn đã tham gia lớp học phần này.';
-    if (/StudentNotEnrolled/.test(message)) return 'Bạn cần tham gia lớp trước khi đánh giá.';
-    if (/ReviewAlreadySubmitted/.test(message)) return 'Bạn đã đánh giá lớp học phần này.';
-    if (/EvaluationClosed/.test(message)) return 'Cổng đánh giá hiện đang đóng.';
-    if (/InvalidScore/.test(message)) return 'Điểm đánh giá phải từ 1 đến 5.';
+    if (/CourseNotFound|LopKhongTonTai/.test(message)) return 'Lớp học phần không tồn tại.';
+    if (/StudentAlreadyEnrolled|DaThamGiaLop/.test(message)) return 'Bạn đã tham gia lớp học phần này.';
+    if (/StudentNotEnrolled|ChuaThamGiaLop/.test(message)) return 'Bạn cần tham gia lớp trước khi đánh giá.';
+    if (/ReviewAlreadySubmitted|DaDanhGiaLop/.test(message)) return 'Bạn đã đánh giá lớp học phần này.';
+    if (/EvaluationClosed|CongDanhGiaDangDong/.test(message)) return 'Cổng đánh giá hiện đang đóng.';
+    if (/InvalidScore|DiemKhongHopLe/.test(message)) return 'Điểm đánh giá phải từ 1 đến 5.';
     return 'Contract từ chối thao tác. Kiểm tra quyền, dữ liệu và phiên bản ABI đã cấu hình.';
   }
   return error?.shortMessage || error?.message || 'Không thể xử lý yêu cầu blockchain.';
@@ -59,7 +87,8 @@ export class SchoolChainClient {
   async snapshot(account, watchedWallets = []) {
     await this.assertIdentity(account);
     const block = await this.provider.getBlockNumber();
-    if (await this.provider.getCode(this.address, block) === '0x') throw new Error('Địa chỉ cấu hình không có smart contract trên mạng đang chọn.');
+    const runtimeCode = await this.provider.getCode(this.address, block);
+    if (runtimeCode === '0x') throw new Error('Địa chỉ cấu hình không có smart contract trên mạng đang chọn.');
     const m = this.methods, read = { blockTag: block };
     let admin, approved, evaluationOpen, count;
     try {
@@ -88,7 +117,8 @@ export class SchoolChainClient {
       }))));
     }
     await this.assertIdentity(account);
-    if (m.join) {
+    const studentSupported = await this.supportsStudents(count, read, runtimeCode);
+    if (studentSupported) {
       for (let offset = 0; offset < courses.length; offset += 10) {
         const states = await Promise.all(courses.slice(offset, offset + 10).map(async course => ({
           id: course.id,
@@ -100,7 +130,14 @@ export class SchoolChainClient {
     }
     await this.assertIdentity(account);
     return { account, admin, role: sameAddress(admin, account) ? 'admin' : approved ? 'teacher' : 'student',
-      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported: Boolean(m.join) };
+      evaluationOpen, courseCount: count, courses, teachers, block, studentSupported };
+  }
+  async supportsStudents(_count, overrides = {}, runtimeCode) {
+    // These project contracts are direct deployments, not proxy contracts.
+    // Code is immutable for an address; RPC failures must propagate as errors.
+    const code = runtimeCode ?? await this.provider.getCode(this.address, overrides.blockTag ?? 'latest');
+    const m = this.methods;
+    return runtimeHasFunctions(code, this.contract.interface, [m.enrolled, m.evaluated, m.join, m.review, m.average]);
   }
   async lookupTeacher(account, address) {
     await this.assertIdentity(account);
@@ -113,7 +150,7 @@ export class SchoolChainClient {
     if (!['approve', 'toggle', 'create', 'join', 'review'].includes(operation)) throw new Error('Thao tác không được hỗ trợ.');
     await this.assertIdentity(account);
     const m = this.methods;
-    if ((operation === 'join' || operation === 'review') && !m.join) {
+    if ((operation === 'join' || operation === 'review') && !await this.supportsStudents(await this.contract[m.count]())) {
       throw new Error('Contract đang cấu hình chưa hỗ trợ chức năng Sinh viên.');
     }
     const [admin, approved] = await Promise.all([this.contract[m.admin](), this.contract[m.approved](account)]);

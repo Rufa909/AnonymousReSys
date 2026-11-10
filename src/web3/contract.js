@@ -1,18 +1,19 @@
-// Human-readable ABI for the member-1 flows. The English ABI is canonical in repo.
+// Human-readable ABIs for both full English and Vietnamese deployments.
 const variants = {
   english: {
     admin: 'schoolAdmin', approved: 'approvedTeachers', open: 'evaluationOpen',
     count: 'courseCount', course: 'courses', approve: 'approveTeacher',
     toggle: 'toggleEvaluation', create: 'createCourse', enrolled: 'enrolledStudents',
-    evaluated: 'hasEvaluated', join: 'joinCourse', review: 'submitReview',
+    evaluated: 'hasEvaluated', join: 'joinCourse', review: 'submitReview', average: 'getAverageScore',
   },
   vietnamese: {
     admin: 'viAdmin', approved: 'giangVienDaDuyet', open: 'congDanhGiaDangMo',
     count: 'tongSoLop', course: 'danhSachLop', approve: 'duyetGiangVien',
-    toggle: 'batTatDanhGia', create: 'taoLopHocPhan',
+    toggle: 'batTatDanhGia', create: 'taoLopHocPhan', enrolled: 'sinhVienDaThamGia',
+    evaluated: 'sinhVienDaDanhGia', join: 'thamGiaLop', review: 'guiDanhGia', average: 'layDiemTrungBinh',
   },
 };
-export function contractDefinition(version = 'english') {
+export function contractDefinition(version = 'vietnamese') {
   const methods = variants[version];
   if (!methods) throw new Error('Phiên bản ABI phải là english hoặc vietnamese.');
   const abi = [
@@ -34,9 +35,13 @@ export function contractDefinition(version = 'english') {
     `function ${methods.evaluated}(uint256,address) view returns (bool)`,
     `function ${methods.join}(uint256)`,
     `function ${methods.review}(uint256,uint256)`,
+    `function ${methods.average}(uint256) view returns (uint256)`,
     'error CourseNotFound(uint256)', 'error StudentAlreadyEnrolled(uint256,address)',
     'error StudentNotEnrolled(uint256,address)', 'error ReviewAlreadySubmitted(uint256,address)',
     'error EvaluationClosed()', 'error InvalidScore(uint256)',
+    'error LopKhongTonTai(uint256)', 'error DaThamGiaLop(uint256,address)',
+    'error ChuaThamGiaLop(uint256,address)', 'error DaDanhGiaLop(uint256,address)',
+    'error CongDanhGiaDangDong()', 'error DiemKhongHopLe(uint256)',
   );
   return { methods, abi };
 }

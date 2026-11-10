@@ -1,9 +1,3 @@
-**Tên đề tài:** Xây dựng Ứng dụng Phi tập trung (DApp) Quản lý và Đánh giá Giảng viên Ẩn danh dựa trên Công nghệ Blockchain  
-
-**Triển khai giai đoạn 2 — Thành viên 1:** [Smart contract Admin và Giảng viên](contracts/DecentralizedEduEvaluation.sol). Xem [hướng dẫn compile, test, demo Remix và bàn giao](doc/SMART_CONTRACT.md). Mã Solidity ở mục 6 bên dưới là thiết kế tham khảo cho toàn bộ luồng của nhóm.
-
----
-
 ## 1. THÔNG TIN CHUNG
 
 - **Tên đề tài:** Xây dựng Ứng dụng Phi tập trung (DApp) Quản lý và Đánh giá Giảng viên Ẩn danh dựa trên Công nghệ Blockchain
@@ -31,7 +25,7 @@ Hệ thống đề xuất khai thác ưu điểm của công nghệ **Blockchain
 - **Thiếu tính xác thực:** Dễ xảy ra tình trạng khảo sát ảo hoặc người không học môn đó vẫn tham gia đánh giá.
 
 ### 3.2. Mục tiêu đề tài
-- **Bảo mật ẩn danh tuyệt đối:** Xác thực quyền truy cập thông qua chữ ký số của ví MetaMask, bảo vệ 100% quyền riêng tư của sinh viên.
+- **Bảo mật không công khai danh tính trên giao diện:** Xác thực quyền truy cập thông qua chữ ký số của ví MetaMask, bảo vệ 100% quyền riêng tư của sinh viên.
 - **Tính bất biến của dữ liệu (Immutable):** Dữ liệu điểm số và phản hồi đã ghi nhận lên Smart Contract không thể bị thao túng.
 - **Kiểm soát truy cập chuẩn xác:** Giảng viên tạo lớp học phần $\rightarrow$ Sinh viên đăng ký tham gia $\rightarrow$ Smart Contract xác thực điều kiện trước khi cho phép gửi đánh giá.
 

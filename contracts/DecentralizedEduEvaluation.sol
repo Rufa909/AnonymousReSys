@@ -1,145 +1,201 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-/// @title Anonymous ReSys
-/// @notice Manages teacher permissions, courses, student enrollment and reviews.
+/// @title Anonymous ReSys - Admin, Giảng viên và Sinh viên
+/// @notice Lưu điểm 1–5; không lưu nhận xét văn bản hoặc bảo đảm ẩn danh mật mã.
 contract DecentralizedEduEvaluation {
-    address public immutable schoolAdmin;
+    // Ví triển khai contract trở thành Admin và không thay đổi được.
+    address public immutable viAdmin;
 
-    // Keep field order compatible with the shared design in README.md.
-    struct Course {
-        string courseName;
-        address teacher;
-        bool exists;
-        uint256 totalScore;
-        uint256 reviewCount;
+    struct LopHocPhan {
+        string tenHocPhan;
+        address viGiangVien;
+        bool tonTai;
+        uint256 tongDiem;
+        uint256 soLuotDanhGia;
     }
 
-    mapping(uint256 => Course) public courses;
-    uint256 public courseCount;
-    mapping(address => bool) public approvedTeachers;
-    bool public evaluationOpen;
+    // ID lớp => thông tin lớp.
+    mapping(uint256 => LopHocPhan) public danhSachLop;
+    uint256 public tongSoLop;
 
-    // Student enrollment and one-review-per-course state.
-    mapping(uint256 => mapping(address => bool)) public enrolledStudents;
-    mapping(uint256 => mapping(address => bool)) public hasEvaluated;
+    // Ví giảng viên => đã được Admin duyệt hay chưa.
+    mapping(address => bool) public giangVienDaDuyet;
 
-    // UTF-8 byte limit, not a character count. Supports Vietnamese course names.
-    uint256 public constant MAX_COURSE_NAME_BYTES = 480;
+    // Mặc định false: cổng đánh giá đang đóng.
+    bool public congDanhGiaDangMo;
 
-    error UnauthorizedAdmin(address caller);
-    error TeacherNotApproved(address caller);
-    error InvalidTeacherAddress();
-    error TeacherAlreadyApproved(address teacher);
-    error InvalidCourseName();
-    error CourseNotFound(uint256 courseId);
-    error StudentAlreadyEnrolled(uint256 courseId, address student);
-    error StudentNotEnrolled(uint256 courseId, address student);
-    error ReviewAlreadySubmitted(uint256 courseId, address student);
-    error EvaluationClosed();
-    error InvalidScore(uint256 score);
+    // Trạng thái tham gia lớp và đánh giá của từng ví.
+    // ID lớp => ví sinh viên => trạng thái.
+    mapping(uint256 => mapping(address => bool))
+        public sinhVienDaThamGia;
 
-    event TeacherApproved(address indexed teacher);
-    event EvaluationStatusChanged(bool evaluationOpen);
-    event CourseCreated(uint256 indexed courseId, string courseName, address indexed teacher);
-    event StudentJoined(uint256 indexed courseId, address indexed student);
-    event ReviewSubmitted(uint256 indexed courseId, uint256 score);
+    mapping(uint256 => mapping(address => bool))
+        public sinhVienDaDanhGia;
+
+    // Giới hạn theo byte UTF-8, không phải số ký tự.
+    uint256 public constant GIOI_HAN_BYTE_TEN_HOC_PHAN = 480;
+
+    // Các lỗi.
+    error KhongPhaiAdmin(address viGoi);
+    error GiangVienChuaDuocDuyet(address viGoi);
+    error DiaChiViKhongHopLe();
+    error GiangVienDaDuocDuyet(address viGiangVien);
+    error TenHocPhanKhongHopLe();
+    error LopKhongTonTai(uint256 maLop);
+    error DaThamGiaLop(uint256 maLop, address viSinhVien);
+    error ChuaThamGiaLop(uint256 maLop, address viSinhVien);
+    error DaDanhGiaLop(uint256 maLop, address viSinhVien);
+    error CongDanhGiaDangDong();
+    error DiemKhongHopLe(uint256 diem);
+
+    // Các sự kiện.
+    event DaDuyetGiangVien(address indexed viGiangVien);
+
+    event DaThayDoiCongDanhGia(bool dangMo);
+
+    event DaTaoLopHocPhan(
+        uint256 indexed maLop,
+        string tenHocPhan,
+        address indexed viGiangVien
+    );
+
+    event SinhVienDaVaoLop(uint256 indexed maLop, address indexed viSinhVien);
+    event DaGuiDanhGia(uint256 indexed maLop, uint256 diem);
 
     constructor() {
-        schoolAdmin = msg.sender;
+        viAdmin = msg.sender;
     }
 
-    modifier onlyAdmin() {
-        if (msg.sender != schoolAdmin) revert UnauthorizedAdmin(msg.sender);
+    // Chỉ ví Admin được gọi.
+    modifier chiAdmin() {
+        if (msg.sender != viAdmin) {
+            revert KhongPhaiAdmin(msg.sender);
+        }
         _;
     }
 
-    modifier onlyApprovedTeacher() {
-        if (!approvedTeachers[msg.sender]) revert TeacherNotApproved(msg.sender);
+    // Chỉ ví giảng viên đã được duyệt được gọi.
+    modifier chiGiangVienDaDuyet() {
+        if (!giangVienDaDuyet[msg.sender]) {
+            revert GiangVienChuaDuocDuyet(msg.sender);
+        }
         _;
     }
 
-    /// @notice Grant course creation permission after off-chain identity verification.
-    function approveTeacher(address _teacher) external onlyAdmin {
-        if (_teacher == address(0)) revert InvalidTeacherAddress();
-        if (approvedTeachers[_teacher]) revert TeacherAlreadyApproved(_teacher);
-        approvedTeachers[_teacher] = true;
-        emit TeacherApproved(_teacher);
+    /// @notice Admin cấp quyền tạo lớp cho một ví giảng viên.
+    function duyetGiangVien(address _viGiangVien)
+        external
+        chiAdmin
+    {
+        // Không cho phép địa chỉ zero.
+        if (_viGiangVien == address(0)) {
+            revert DiaChiViKhongHopLe();
+        }
+
+        // Không duyệt lại ví đã được duyệt.
+        if (giangVienDaDuyet[_viGiangVien]) {
+            revert GiangVienDaDuocDuyet(_viGiangVien);
+        }
+
+        giangVienDaDuyet[_viGiangVien] = true;
+
+        emit DaDuyetGiangVien(_viGiangVien);
     }
 
-    /// @notice Open or close the shared evaluation gate. Initially closed.
-    function toggleEvaluation() external onlyAdmin {
-        evaluationOpen = !evaluationOpen;
-        emit EvaluationStatusChanged(evaluationOpen);
+    /// @notice Admin mở hoặc đóng cổng đánh giá.
+    function batTatDanhGia() external chiAdmin {
+        congDanhGiaDangMo = !congDanhGiaDangMo;
+
+        emit DaThayDoiCongDanhGia(congDanhGiaDangMo);
     }
 
-    /// @notice Create a course owned by the caller, with zero-based IDs.
-    /// @dev Reject empty, ASCII-whitespace-only and oversized names.
-    /// Names are stored as supplied; trimming and character limits belong to the UI.
-    function createCourse(string calldata _courseName) external onlyApprovedTeacher {
-        bytes memory name = bytes(_courseName);
-        if (name.length == 0 || name.length > MAX_COURSE_NAME_BYTES) revert InvalidCourseName();
+    /// @notice Giảng viên đã được duyệt tạo lớp học phần.
+    function taoLopHocPhan(string calldata _tenHocPhan)
+        external
+        chiGiangVienDaDuyet
+    {
+        bytes memory duLieuTen = bytes(_tenHocPhan);
 
-        bool hasContent;
-        for (uint256 i; i < name.length; ++i) {
-            // Treat ASCII control characters and spaces as blank.
-            if (uint8(name[i]) > 32) {
-                hasContent = true;
+        // Chặn tên rỗng hoặc vượt giới hạn byte.
+        if (
+            duLieuTen.length == 0 ||
+            duLieuTen.length > GIOI_HAN_BYTE_TEN_HOC_PHAN
+        ) {
+            revert TenHocPhanKhongHopLe();
+        }
+
+        // Chặn tên chỉ gồm dấu cách hoặc ký tự điều khiển ASCII.
+        bool coNoiDung;
+
+        for (uint256 i; i < duLieuTen.length; ++i) {
+            if (uint8(duLieuTen[i]) > 32) {
+                coNoiDung = true;
                 break;
             }
         }
-        if (!hasContent) revert InvalidCourseName();
 
-        uint256 courseId = courseCount;
-        courses[courseId] = Course({
-            courseName: _courseName,
-            teacher: msg.sender,
-            exists: true,
-            totalScore: 0,
-            reviewCount: 0
+        if (!coNoiDung) {
+            revert TenHocPhanKhongHopLe();
+        }
+
+        // ID lớp đầu tiên là 0.
+        uint256 maLop = tongSoLop;
+
+        danhSachLop[maLop] = LopHocPhan({
+            tenHocPhan: _tenHocPhan,
+            viGiangVien: msg.sender,
+            tonTai: true,
+            tongDiem: 0,
+            soLuotDanhGia: 0
         });
-        courseCount = courseId + 1;
-        emit CourseCreated(courseId, _courseName, msg.sender);
+
+        tongSoLop = maLop + 1;
+
+        emit DaTaoLopHocPhan(
+            maLop,
+            _tenHocPhan,
+            msg.sender
+        );
     }
 
-    /// @notice Join an existing course before submitting a review.
-    function joinCourse(uint256 _courseId) external {
-        Course storage course = courses[_courseId];
-        if (!course.exists) revert CourseNotFound(_courseId);
-        if (enrolledStudents[_courseId][msg.sender]) {
-            revert StudentAlreadyEnrolled(_courseId, msg.sender);
+    /// @notice Tham gia lớp đã tồn tại; mỗi ví chỉ tham gia một lần mỗi lớp.
+    /// @dev Theo thiết kế hiện tại, không có danh sách xác minh sinh viên thật.
+    function thamGiaLop(uint256 _maLop) external {
+        if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
+        if (sinhVienDaThamGia[_maLop][msg.sender]) {
+            revert DaThamGiaLop(_maLop, msg.sender);
         }
 
-        enrolledStudents[_courseId][msg.sender] = true;
-        emit StudentJoined(_courseId, msg.sender);
+        sinhVienDaThamGia[_maLop][msg.sender] = true;
+        emit SinhVienDaVaoLop(_maLop, msg.sender);
     }
 
-    /// @notice Submit one score from 1 to 5 for a joined course.
-    function submitReview(uint256 _courseId, uint256 _score) external {
-        if (!evaluationOpen) revert EvaluationClosed();
+    /// @notice Gửi một điểm 1–5 cho lớp đã tham gia khi cổng đánh giá mở.
+    function guiDanhGia(uint256 _maLop, uint256 _diem) external {
+        if (!congDanhGiaDangMo) revert CongDanhGiaDangDong();
 
-        Course storage course = courses[_courseId];
-        if (!course.exists) revert CourseNotFound(_courseId);
-        if (!enrolledStudents[_courseId][msg.sender]) {
-            revert StudentNotEnrolled(_courseId, msg.sender);
+        LopHocPhan storage lop = danhSachLop[_maLop];
+        if (!lop.tonTai) revert LopKhongTonTai(_maLop);
+        if (!sinhVienDaThamGia[_maLop][msg.sender]) {
+            revert ChuaThamGiaLop(_maLop, msg.sender);
         }
-        if (hasEvaluated[_courseId][msg.sender]) {
-            revert ReviewAlreadySubmitted(_courseId, msg.sender);
+        if (sinhVienDaDanhGia[_maLop][msg.sender]) {
+            revert DaDanhGiaLop(_maLop, msg.sender);
         }
-        if (_score < 1 || _score > 5) revert InvalidScore(_score);
+        if (_diem < 1 || _diem > 5) revert DiemKhongHopLe(_diem);
 
-        hasEvaluated[_courseId][msg.sender] = true;
-        course.totalScore += _score;
-        course.reviewCount += 1;
-
-        emit ReviewSubmitted(_courseId, _score);
+        sinhVienDaDanhGia[_maLop][msg.sender] = true;
+        lop.tongDiem += _diem;
+        lop.soLuotDanhGia += 1;
+        emit DaGuiDanhGia(_maLop, _diem);
     }
 
-    /// @notice Return the average score multiplied by 10 (for example, 4.5 is 45).
-    function getAverageScore(uint256 _courseId) external view returns (uint256) {
-        Course storage course = courses[_courseId];
-        if (!course.exists) revert CourseNotFound(_courseId);
-        if (course.reviewCount == 0) return 0;
-        return (course.totalScore * 10) / course.reviewCount;
+    /// @notice Trả điểm trung bình nhân 10, làm tròn xuống (45 nghĩa là 4.5).
+    function layDiemTrungBinh(uint256 _maLop) external view returns (uint256) {
+        LopHocPhan storage lop = danhSachLop[_maLop];
+        if (!lop.tonTai) revert LopKhongTonTai(_maLop);
+        if (lop.soLuotDanhGia == 0) return 0;
+        return (lop.tongDiem * 10) / lop.soLuotDanhGia;
     }
 }

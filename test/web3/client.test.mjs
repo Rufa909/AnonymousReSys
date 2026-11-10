@@ -13,18 +13,22 @@ const rpc = { request: async ({ method, params }) => {
   return connection.provider.request({ method, params: params || [] });
 } };
 before(async () => {
-  artifact = await compileContract();
+  // The actual source is Vietnamese. Compile it directly; derive an English
+  // selector fixture only to retain backwards-compatibility coverage.
+  vietnameseArtifact = await compileContract();
   let source = await readFile(new URL('../../contracts/DecentralizedEduEvaluation.sol', import.meta.url), 'utf8');
-  for (const [from, to] of Object.entries({ schoolAdmin: 'viAdmin', approvedTeachers: 'giangVienDaDuyet',
-    evaluationOpen: 'congDanhGiaDangMo', courseCount: 'tongSoLop', courses: 'danhSachLop',
-    approveTeacher: 'duyetGiangVien', toggleEvaluation: 'batTatDanhGia', createCourse: 'taoLopHocPhan' })) {
+  for (const [from, to] of Object.entries({ viAdmin: 'schoolAdmin', giangVienDaDuyet: 'approvedTeachers',
+    congDanhGiaDangMo: 'evaluationOpen', tongSoLop: 'courseCount', danhSachLop: 'courses',
+    duyetGiangVien: 'approveTeacher', batTatDanhGia: 'toggleEvaluation', taoLopHocPhan: 'createCourse',
+    sinhVienDaThamGia: 'enrolledStudents', sinhVienDaDanhGia: 'hasEvaluated', thamGiaLop: 'joinCourse',
+    guiDanhGia: 'submitReview', layDiemTrungBinh: 'getAverageScore' })) {
     source = source.replace(new RegExp(`\\b${from}\\b`, 'g'), to);
   }
   const result = JSON.parse(solc.compile(JSON.stringify({ language: 'Solidity', sources: { 'Vi.sol': { content: source } },
     settings: { evmVersion: 'paris', outputSelection: { '*': { '*': ['abi', 'evm.bytecode.object'] } } } })));
   assert.equal(result.errors?.some(error => error.severity === 'error') || false, false);
   const vi = result.contracts['Vi.sol'].DecentralizedEduEvaluation;
-  vietnameseArtifact = { abi: vi.abi, bytecode: `0x${vi.evm.bytecode.object}` };
+  artifact = { abi: vi.abi, bytecode: `0x${vi.evm.bytecode.object}` };
   connection = await hre.network.connect('hardhat');
   provider = new BrowserProvider(connection.provider);
   provider.pollingInterval = 10;
@@ -116,7 +120,7 @@ test('Vietnamese ABI works for the same complete member-1 workflow', async () =>
   await api.transact(selected, 'create', 'Lớp tiếng Việt');
   const data = await api.snapshot(selected);
   assert.equal(data.role, 'teacher'); assert.equal(data.evaluationOpen, true);
-  assert.equal(data.studentSupported, false);
+  assert.equal(data.studentSupported, true);
   assert.equal(data.courses[0].name, 'Lớp tiếng Việt');
 });
 
