@@ -5,6 +5,7 @@ export default function GrantEnrollmentModal({ course, busy, error, onClose, onS
   const [text, setText] = useState('');
   const [wallets, setWallets] = useState(null);
   const [failure, setFailure] = useState('');
+  const entryCount = text.trim() ? text.trim().split(/[\s,;]+/).filter(Boolean).length : 0;
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement, overflow = document.body.style.overflow;
@@ -32,10 +33,11 @@ export default function GrantEnrollmentModal({ course, busy, error, onClose, onS
       }}>
         <label className="form-label" htmlFor="student-wallets">Danh sách địa chỉ ví</label>
         <textarea id="student-wallets" rows={6} value={text} disabled={busy || Boolean(wallets)} onChange={event => setText(event.target.value)} placeholder="Mỗi ví một dòng, hoặc ngăn cách bằng dấu phẩy / chấm phẩy" required/>
-        {wallets && <div className="grant-preview"><strong>Xác nhận {wallets.length} ví sau khi loại trùng:</strong><ul>{wallets.map(wallet => <li key={wallet}><code>{wallet}</code></li>)}</ul><button className="text-button" type="button" disabled={busy} onClick={() => setWallets(null)}>Sửa danh sách</button></div>}
+        <div className="wallet-count" aria-live="polite">{wallets ? wallets.length : entryCount} / 100 ví{!wallets && entryCount > 0 ? ' đã nhập, chưa kiểm tra' : ''}</div>
+        {wallets && <div className="grant-preview"><strong>Xác nhận {wallets.length} ví:</strong>{entryCount > wallets.length && <p>Đã bỏ {entryCount - wallets.length} địa chỉ trùng.</p>}<ul>{wallets.map(wallet => <li key={wallet}><code>{wallet}</code></li>)}</ul><button className="text-button" type="button" disabled={busy} onClick={() => setWallets(null)}>Sửa danh sách</button></div>}
         {(failure || error) && <p className="form-error" role="alert">{failure || error}</p>}
         {busy && <p role="status">Đang xử lý giao dịch, hãy kiểm tra MetaMask…</p>}
-        <div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>Hủy</button><button className="primary" disabled={busy}>{wallets ? demo ? 'Cấp quyền mô phỏng' : 'Cấp quyền qua MetaMask' : 'Kiểm tra danh sách'}</button></div>
+        <div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>Hủy</button><button className="primary" disabled={busy || (!wallets && !text.trim())}>{wallets ? demo ? 'Cấp quyền mô phỏng' : 'Cấp quyền qua MetaMask' : 'Kiểm tra danh sách'}</button></div>
       </form>
     </section>
   </div>;

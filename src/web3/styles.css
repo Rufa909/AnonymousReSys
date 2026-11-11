@@ -102,3 +102,111 @@
 .results-waiting { padding: 28px; }
 .results-waiting p { margin: 12px 0 20px; color: var(--muted); }
 .results-waiting-label { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+
+/* Các thành phần quản trị, giảng viên và sinh viên dùng chung một hệ thống. */
+.chain-app main { max-width: 1400px; padding-inline: clamp(24px, 3vw, 40px); }
+.chain-app .sidebar-note { margin-top: 32px; padding: 14px; }
+.chain-app .profile { margin-top: auto; }
+.chain-app .network { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; font-size: 12px; background: var(--surface); }
+.chain-app .wallet-identicon { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 50%; font-size: 11px; font-weight: 700; }
+.chain-app .wallet-button .wallet-identicon { width: 26px; height: 26px; font-size: 9px; }
+.chain-app .stat, .chain-app .panel, .chain-app .survey, .chain-app .course-card { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04); }
+.chain-app .stat { min-height: 112px; }
+.chain-app .stat-top, .chain-app .page-heading p, .chain-app .panel-heading p, .chain-app .survey-copy p, .chain-app .notice, .chain-app .panel-footer, .chain-app .sidebar-note p { font-size: 13px; color: #64748b; }
+.chain-app .stat-icon { width: 38px; height: 38px; }
+.chain-app .stat-0 .stat-icon { color: #4f46e5; background: #eef2ff; }
+.chain-app .stat-1 .stat-icon { color: #067647; background: #ecfdf3; }
+.chain-app .stat-2 .stat-icon { color: #b54708; background: #fff6e5; }
+.chain-app .stat-stars { color: #c58a18; letter-spacing: 2px; margin-top: 8px; font-size: 15px; }
+.chain-app .stat-stars span { color: #d0d5dd; }
+.chain-app .stat-stars .filled { color: #c58a18; }
+.loading-state { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+.loading-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; margin-top: 16px; }
+.loading-cards i { height: 112px; border-radius: 9px; background: linear-gradient(90deg,#eef0f5,#f8f9fc,#eef0f5); background-size: 200% 100%; animation: loading-shimmer 1.4s linear infinite; }
+@keyframes loading-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .loading-cards i { animation: none; } }
+.chain-app .survey-badge, .chain-app .teacher-badge { font-size: 12px; padding: 6px 10px; }
+.chain-app .survey-badge.green, .chain-app .teacher-badge.green { background: #ecfdf3; color: #067647; }
+.chain-app .survey-badge i, .chain-app .teacher-badge i { width: 7px; height: 7px; }
+.chain-app .danger-outline { border: 1px solid #f0aaa3; background: #fff; color: #b42318; border-radius: 6px; padding: 12px 17px; font-size: 12px; font-weight: 600; margin-left: auto; }
+.chain-app .danger-outline:hover { background: #fff1f0; }
+.chain-app th { font-size: 12px; color: #64748b; }
+.chain-app td { font-size: 13px; }
+.chain-app tbody tr { transition: background-color 180ms ease; }
+.chain-app tbody tr:hover { background: #f8f9ff; }
+.teacher-wallet { display: flex; align-items: center; gap: 10px; }
+.teacher-wallet code { color: var(--text); font-size: 13px; }
+.teacher-wallet a, .teacher-wallet .wallet-copy { color: var(--primary); padding: 6px; border-radius: 5px; }
+.teacher-wallet a:hover, .teacher-wallet .wallet-copy:hover { background: var(--primary-soft); }
+.teacher-approved, .chain-app .approve-button { display: inline-flex; justify-content: center; min-width: 100px; padding: 9px 12px; font-size: 12px; }
+.teacher-approved { color: #067647; }
+.chain-app button, .chain-app nav button, .chain-app .course-card { transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+@media (max-width: 760px) {
+  .chain-app main { padding-inline: 18px; }
+  .chain-app .network { display: inline-flex; }
+  .chain-app .danger-outline { width: 100%; margin-left: 0; }
+  .chain-app .stat-top, .chain-app .page-heading p, .chain-app .panel-heading p, .chain-app .survey-copy p { font-size: 12px; }
+}
+
+/* Giữ phần riêng của giảng viên và sinh viên cùng tông với trang quản trị. */
+.chain-app:is(.role-teacher, .role-student) .notice {
+  background: var(--primary-soft);
+  border: 1px solid #e0e7ff;
+  color: var(--text);
+  line-height: 1.7;
+}
+.chain-app:is(.role-teacher, .role-student) .course-card {
+  border-color: var(--border);
+  border-radius: 9px;
+  box-shadow: 0 1px 3px #1018280a;
+}
+.chain-app:is(.role-teacher, .role-student) .course-icon,
+.chain-app:is(.role-teacher, .role-student) .course-id {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.chain-app:is(.role-teacher, .role-student) .student-course-actions .secondary {
+  color: var(--primary);
+  border-color: #c7d2fe;
+  background: var(--surface);
+}
+.chain-app:is(.role-teacher, .role-student) .student-course-actions .secondary:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+.chain-app:is(.role-teacher, .role-student) .results-waiting-label {
+  color: var(--primary);
+}
+
+/* Bố cục gọn và dễ đọc cho các thẻ của cả ba vai trò. */
+.chain-app main { max-width: 1600px; }
+.chain-app .stat { min-height: 0; padding: 16px 20px; }
+.chain-app .stat > strong { margin-top: 6px; font-size: 30px; }
+.stat-detail { min-height: 20px; margin-top: 7px; font-size: 12px; color: #64748b; }
+.chain-app .stat-stars { margin-top: 0; }
+.chain-app .sidebar-note { display: flex; align-items: flex-start; gap: 9px; flex-wrap: wrap; }
+.chain-app .sidebar-note strong { margin: 0; font-size: 12px; }
+.chain-app .sidebar-note p { margin: 0; flex-basis: 100%; font-size: 12px; }
+.survey-status { margin-left: auto; display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 13px; font-weight: 500; }
+.survey-status i { width: 9px; height: 9px; border-radius: 50%; background: #98a2b3; }
+.survey-status.is-open i { background: #12b76a; }
+.chain-app .course-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.chain-app .course-card { padding: 20px; }
+.chain-app .course-top { margin-bottom: 12px; }
+.chain-app .course-card h3 { min-height: 0; }
+.chain-app .course-card p, .chain-app .course-card code, .chain-app .course-bottom, .chain-app .course-id, .chain-app .chain-contract, .chain-app footer { font-size: 13px; color: #64748b; }
+.chain-app .course-bottom { margin-top: 14px; padding-top: 12px; justify-content: flex-start; gap: 16px; }
+.chain-app .course-card-footer { padding-top: 10px; }
+.chain-app .course-card-footer .student-course-actions { justify-content: flex-end; margin-top: 4px; padding-top: 10px; }
+.chain-app .course-card-footer .student-course-actions button { width: auto; }
+.course-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.chain-app .evaluated-badge { font-size: 12px; background: #ecfdf3; color: #067647; }
+.chain-app .results-waiting-label { color: #475467; font-size: 13px; }
+.wallet-count { margin-top: 7px; text-align: right; font-size: 12px; color: #64748b; }
+.chain-app .course-card:has(button:hover, a:hover) { transform: translateY(-2px); box-shadow: 0 5px 18px rgba(16,24,40,.10); }
+.chain-app .course-card { transition: transform 180ms ease, box-shadow 180ms ease; }
+.refresh-spinning { display: inline-flex; animation: reviews-spin .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .refresh-spinning { animation: none; } .chain-app .course-card { transition: none; } }
+@media (max-width: 760px) {
+  .chain-app .course-grid { grid-template-columns: 1fr; }
+  .survey-status { margin-left: 0; width: 100%; }
+}
