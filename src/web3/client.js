@@ -43,6 +43,31 @@ export function formatWeb3Error(error) {
   if (code === -32002 || error?.info?.error?.code === -32002) return 'MetaMask đang có yêu cầu chờ xử lý. Hãy mở ví để xử lý trước.';
   if (code === 'INSUFFICIENT_FUNDS') return 'Ví chưa đủ ETH trên mạng thử nghiệm để trả phí giao dịch.';
   if (code === 'CALL_EXCEPTION') {
+    // B uses require(..., string). Retain named-error handling below for
+    // existing A deployments until the configured address is switched.
+    const reason = String(error.revert?.name === 'Error' ? error.revert.args?.[0] : error.reason || error.shortMessage || '').toLowerCase();
+    const requireMessages = [
+      ['khong phai admin', 'Chỉ ví Admin của contract được thực hiện thao tác này.'],
+      ['giang vien chua duoc duyet', 'Ví giảng viên chưa được Admin phê duyệt.'],
+      ['giang vien da duoc duyet', 'Ví giảng viên này đã được phê duyệt.'],
+      ['dia chi vi khong hop le', 'Địa chỉ ví không hợp lệ hoặc là địa chỉ zero.'],
+      ['ten hoc phan', 'Tên học phần không hợp lệ.'],
+      ['lop khong ton tai', 'Lớp học phần không tồn tại.'],
+      ['khong co quyen quan ly lop', 'Chỉ Admin hoặc giảng viên của lớp được cấp quyền cho sinh viên.'],
+      ['danh sach vi phai', 'Danh sách phải có từ 1 đến 100 ví.'],
+      ['chua duoc cap quyen vao lop', 'Ví của bạn chưa được cấp quyền tham gia lớp này.'],
+      ['da tham gia lop', 'Bạn đã tham gia lớp học phần này.'],
+      ['chua tham gia lop', 'Bạn cần tham gia lớp trước khi đánh giá.'],
+      ['da danh gia lop', 'Bạn đã đánh giá lớp học phần này.'],
+      ['cong danh gia dang dong', 'Cổng đánh giá hiện đang đóng.'],
+      ['diem phai tu', 'Điểm đánh giá phải từ 1 đến 5.'],
+      ['nhan xet rong', 'Nhận xét không được để trống.'],
+      ['nhan xet qua dai', 'Nhận xét vượt quá 1.000 byte UTF-8.'],
+      ['nhan xet chi co', 'Nhận xét phải có nội dung ngoài khoảng trắng.'],
+      ['chi so nhan xet', 'Chỉ số nhận xét không hợp lệ.'],
+    ];
+    const translated = requireMessages.find(([text]) => reason.includes(text));
+    if (translated) return translated[1];
     const message = String(error.revert?.name || error.shortMessage || '');
     if (/ChuaDuocCapQuyenVaoLop/.test(message)) return 'Ví của bạn chưa được cấp quyền tham gia lớp này.';
     if (/KhongCoQuyenQuanLyLop/.test(message)) return 'Chỉ Admin hoặc giảng viên của lớp được cấp quyền cho sinh viên.';

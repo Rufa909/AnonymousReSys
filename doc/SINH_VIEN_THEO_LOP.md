@@ -24,7 +24,7 @@ Sửa giao diện hay gọi trực tiếp qua Remix cũng không vượt qua đ�
 
 Contract đã deploy không tự cập nhật khi sửa file Solidity. Bản đang cấu hình chưa có hàm nhận xét mới; web sẽ không cho gửi đánh giá bằng ABI mới cho đến khi dùng bản triển khai mới.
 
-1. Sao chép toàn bộ `contracts/DecentralizedEduEvaluation.sol` mới vào Remix, compile Solidity **0.8.28**.
+1. Sao chép toàn bộ `contracts/DecentralizedEduEvaluation.sol` mới vào Remix, compile Solidity **0.8.28**, optimizer 200 runs, EVM paris.
 2. Dùng **Browser Extension → MetaMask**, mạng **Sepolia**, chọn ví dự định làm Admin rồi deploy. Xác nhận giao dịch trong ví.
 3. Lấy địa chỉ **contract mới** từ Deployed Contracts hoặc trường Contract Address của biên nhận giao dịch. Đây không phải địa chỉ ví Admin.
 4. Sửa `.env`: `VITE_CONTRACT_ADDRESS=<địa chỉ contract mới>`, giữ `VITE_CONTRACT_ABI=vietnamese`, `VITE_CHAIN_ID=11155111`.

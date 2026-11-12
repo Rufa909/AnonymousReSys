@@ -4,7 +4,7 @@ import { formatWeb3Error } from '../web3/client.js';
 
 const short = value => `${value.slice(0, 6)}…${value.slice(-4)}`;
 
-export default function CommentsPage({ course, loadPage, onBack, demo = false, sourceLabel = 'Blockchain' }) {
+export default function CommentsPage({ course, loadPage, onBack, sourceLabel = 'Blockchain' }) {
   const [page, setPage] = useState(0);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,8 +35,8 @@ export default function CommentsPage({ course, loadPage, onBack, demo = false, s
     <div className="reviews-layout">
       <aside className="reviews-details" aria-label="Thông tin học phần">
         <section className="reviews-score"><span className="reviews-label">Điểm trung bình</span><div className="reviews-score-value">{course.score === null ? '—' : course.score.toFixed(1)}<span>/ 5</span></div><div className="reviews-stars" aria-hidden="true">{[1,2,3,4,5].map(star => <span key={star} className={course.score !== null && star <= Math.round(course.score) ? 'filled' : ''}><Icon name="star" size={20}/></span>)}</div><p>Từ {String(course.reviewCount)} lượt đánh giá</p></section>
-        <section className="reviews-course-info"><h2>Thông tin học phần</h2><dl><div><dt>Mã học phần</dt><dd>HP-{course.id}</dd></div><div><dt>Ví giảng viên</dt><dd><code title={course.teacher}>{short(course.teacher)}</code></dd></div><div><dt>Nguồn dữ liệu</dt><dd>{demo ? 'Dữ liệu mô phỏng' : sourceLabel}</dd></div></dl></section>
-        <div className="reviews-privacy"><Icon name="shield" size={20}/><p>Danh sách không hiển thị địa chỉ ví bên cạnh nhận xét.{!demo && ' Giao dịch blockchain vẫn có thể được truy vết.'}</p></div>
+        <section className="reviews-course-info"><h2>Thông tin học phần</h2><dl><div><dt>Mã học phần</dt><dd>HP-{course.id}</dd></div><div><dt>Ví giảng viên</dt><dd><code title={course.teacher}>{short(course.teacher)}</code></dd></div><div><dt>Nguồn dữ liệu</dt><dd>{sourceLabel}</dd></div></dl></section>
+        <div className="reviews-privacy"><Icon name="shield" size={20}/><p>Danh sách không hiển thị địa chỉ ví bên cạnh nhận xét. Giao dịch blockchain vẫn có thể được truy vết.</p></div>
       </aside>
       <section className="reviews-content" aria-labelledby="reviews-list-title" aria-busy={loading}>
         <div className="reviews-list-heading"><div><h2 id="reviews-list-title">Tất cả nhận xét <span>{String(total)}</span></h2><p>Góc nhìn và trải nghiệm học tập của sinh viên.</p></div><span className="reviews-sort">Mới nhất trước</span></div>

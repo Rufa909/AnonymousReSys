@@ -8,7 +8,7 @@
 
 ## Cập nhật giao diện ngày 14/11/2026
 
-- Web thật và UI mẫu dùng chung ChainWorkspace. UI mẫu dùng adapter dữ liệu mô phỏng riêng, có lựa chọn vai trò và nút Bắt đầu trống/Nạp dữ liệu mẫu. Dữ liệu mẫu không ghi lên blockchain và được đặt lại khi rời chế độ hoặc tải lại trang.
+- UI mẫu đã được gỡ ngày 18/11/2026. Website chỉ dùng ChainWorkspace kết nối MetaMask và contract thật.
 - Mỗi lớp có nút Xem tất cả nhận xét, mở trang riêng trong không gian làm việc. Trang hiển thị thông tin học phần, điểm tổng hợp và 10 nhận xét/trang, mới nhất trước; việc đọc không cần giao dịch MetaMask. Các trang được cố định tại cùng block; đóng và mở lại để đọc nhận xét mới phát sinh.
 - Thẻ lớp chỉ hiển thị số lượt, điểm và nút thao tác; không hiển thị hoặc tải trước nội dung nhận xét. Nhận xét chỉ được đọc khi mở trang riêng, bỏ giới hạn chung 100 nhận xét. Breadcrumb hiển thị đúng trang đang mở.
 
@@ -16,7 +16,7 @@
 
 Website mặc định mở không gian blockchain thật. MetaMask cung cấp địa chỉ ví; Ethers đọc quyền từ contract để mở Dashboard Admin, Giảng viên hoặc Sinh viên. Các thao tác đã gắn giao dịch gồm duyệt giảng viên, mở/đóng đánh giá, tạo lớp học phần, cấp quyền sinh viên, tham gia lớp và gửi điểm kèm nhận xét. Dữ liệu chỉ được tải lại sau khi giao dịch thành công, không tự tăng số lớp hoặc đổi quyền trước khi giao dịch được xác nhận.
 
-Bản UI cũ vẫn có ở nút “Xem bản UI mẫu”, hiển thị nhãn dữ liệu mô phỏng riêng. Hai chế độ không dùng chung state và không trộn số liệu mẫu với contract.
+Không còn chế độ chuyển vai trò hoặc dữ liệu mẫu. Vai trò được xác định theo ví và quyền trên contract.
 
 ## Cấu hình đang dùng, xác minh ngày 09/11/2026
 
@@ -84,7 +84,7 @@ File Solidity trong repository vẫn giữ ABI tiếng Anh để tương thích 
 | src/web3/useSchoolChain.js | Trạng thái React, kết nối ví, account/network events và chống kết quả cũ ghi đè phiên mới |
 | src/components/ChainWorkspace.jsx | UI Admin/Giảng viên đọc dữ liệu thật |
 | src/web3/styles.css | Giao diện kết nối, lỗi, tiến trình và chế độ mẫu |
-| src/main.jsx | Chọn không gian blockchain mặc định hoặc bản UI mẫu |
+| src/main.jsx | Khởi tạo trực tiếp không gian blockchain |
 | test/web3/client.test.mjs | Kiểm thử lớp tích hợp trên EVM cục bộ |
 
 ## Quy tắc giao dịch
@@ -108,7 +108,7 @@ npm run build
 
 Bộ Web3 gồm 11 ca: đọc trạng thái; duyệt/tạo lớp/toggle; Sinh viên tham gia và gửi một điểm; tương thích ABI tiếng Việt; chặn vượt quyền; sai mạng/đổi ví; đổi ví trong lúc đọc; sai ABI/địa chỉ; toggle dùng trạng thái cũ; từ chối ký; tên rỗng và duyệt trùng. Test deploy các fixture vào Hardhat trong bộ nhớ, không dùng ví hay ETH của người dùng.
 
-Đã kiểm tra trên trình duyệt không có MetaMask: hiển thị đúng màn hình chào và thông báo thiếu ví; chuyển qua lại UI mẫu có nhãn phân biệt. Chưa hoàn thành kiểm thử bằng ký giao dịch MetaMask thật trên Sepolia, người dùng cần chạy lại luồng thủ công ở trên.
+Đã kiểm tra trên trình duyệt không có MetaMask: hiển thị đúng màn hình chào và thông báo thiếu ví; UI mẫu đã được gỡ trong lần cập nhật 18/11/2026. Chưa hoàn thành kiểm thử bằng ký giao dịch MetaMask thật trên Sepolia, người dùng cần chạy lại luồng thủ công ở trên.
 
 ## Giới hạn và bàn giao
 

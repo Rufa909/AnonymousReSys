@@ -1,5 +1,45 @@
 # Nhật ký đồ án Anonymous ReSys
 
+## Ngày 18/11/2026 — Gỡ demo/UI mẫu, giữ kiểm thử hệ thống thật
+
+- Entry main.jsx mở trực tiếp ChainWorkspace với useSchoolChain. Gỡ nút UI mẫu, bộ chọn vai trò giả, nạp/reset dữ liệu, nhánh hiển thị mô phỏng trong trang và hộp thoại, CSS demo.
+- Xóa useDemoSchoolChain.js, demoSchool.js, demoData.js và hai component UI mẫu cũ không còn được import: PublicResults.jsx, StudentWorkspace.jsx.
+- Xóa riêng test/web3/demo.test.mjs vì nguồn demo đã gỡ. Giữ test contract, Web3 thật, phân trang, phân quyền sinh viên, xử lý lỗi B và các script kiểm thử.
+- Build và 27/27 test Web3 đạt. Không còn tham chiếu demo hoặc mô phỏng trong mã nguồn đang chạy. Không sửa contract hoặc .env trong lần dọn này; dữ liệu blockchain và MySQL không bị xóa.
+
+## Ngày 18/11/2026 — Giữ bản B với Solidity 0.8.28
+
+- Theo lựa chọn người dùng, đưa pragma, dependency solc, cấu hình Hardhat và hướng dẫn deploy về 0.8.28. Giữ cấu trúc bản B và kiểm tra nội dung khoảng trắng; frontend tiếp tục hỗ trợ require reason.
+- Compile xác nhận solc 0.8.28+commit.7893614a. 25/25 test contract và 29/29 test Web3 đạt.
+- Không đổi .env hoặc gửi giao dịch/deploy; khi deploy B trên Remix chọn 0.8.28, optimizer 200 runs, EVM paris.
+
+## Ngày 18/11/2026 — Thay nguồn A bằng bản B và nâng Solidity 0.8.38
+
+- Dùng Downloads/DecentralizedEduEvaluation.ban-thu.sol làm nền thay contracts/DecentralizedEduEvaluation.sol; giữ require chuỗi, viAdmin public, mapping nhận xét theo chỉ số và bộ đếm soLuotDanhGia của B.
+- Thêm helper private coNoiDung và require để giữ kiểm tra chặn tên/nhận xét chỉ có dấu cách hoặc ký tự điều khiển ASCII. Không thay 9 hàm nghiệp vụ và 17 getter/hàm public chung của B.
+- Xác minh release Solidity 0.8.38 qua nguồn chính thức và npm; cài solc@0.8.38 chính xác, cập nhật package.json, package-lock.json, pragma và hardhat.config.js. Optimizer 200 runs và EVM paris giữ nguyên. Compile xác nhận solc 0.8.38+commit.1835d247.
+- Frontend dịch Error(string) của B sang tiếng Việt; vẫn giữ giải mã custom error A để bản đã deploy đang cấu hình tiếp tục hoạt động. Điều kiện sinh viên chỉ xem nhận xét khi cổng đóng không thay đổi.
+- Cập nhật test hợp đồng sang kiểm tra require reason; thêm kiểm tra mapping nhận xét liên tiếp, giới hạn chỉ số và thông báo lỗi B. 25/25 test contract và 29/29 test Web3 đạt; build thành công, còn cảnh báo bundle trên 500 kB.
+- Cập nhật doc/SMART_CONTRACT.md và hướng dẫn sinh viên theo lớp cho compiler mới. Không sửa file người dùng ở Downloads, không thay .env, không deploy hoặc gửi giao dịch Sepolia.
+- Để áp dụng B trên mạng cần deploy bản trong contracts/ bằng Solidity 0.8.38, optimizer 200, EVM paris; cập nhật địa chỉ mới sau khi xác minh. Không tự chuyển dữ liệu từ A sang B.
+
+## Ngày 18/11/2026 — Đối chiếu contract gốc và bản thử do người dùng cung cấp
+
+- Đọc Downloads/DecentralizedEduEvaluation.sol (9.933 byte) và DecentralizedEduEvaluation.ban-thu.sol (7.700 byte); đây không phải cặp gốc/flattened trước đó.
+- Compile cả hai bằng solc 0.8.28, optimizer 200, EVM paris; không lỗi/cảnh báo. 9 hàm nghiệp vụ cùng tên/tham số/đầu ra; 17 hàm public/external chung có cùng selector. Bản đầu có thêm 3 getter hằng số và 16 custom errors; bản thử bỏ hằng public, dùng require chuỗi. ABI tổng thể và runtime bytecode không giống nhau.
+- Bản thử dùng pragma ^0.8.17, viAdmin không immutable nhưng hiện không có setter; đổi mapping lớp=>string[] thành mapping lớp=>mapping chỉ số=>string, dùng soLuotDanhGia làm bộ đếm nhận xét. Storage layout khác cả vị trí và loại lưu trữ.
+- Chạy cùng luồng local Hardhat cho cả hai: duyệt giảng viên, tạo lớp, chặn outsider, cấp quyền, tham gia, gửi nhận xét, chặn đánh giá trùng; cùng trả 1 nhận xét và điểm trung bình nhân 10 bằng 50 cho điểm 5.
+- Kiểm tra khác biệt: tên lớp và nhận xét chỉ gồm 3 dấu cách bị bản đầu chặn, bản thử chấp nhận. Lỗi gọi mở/đóng cổng trái quyền: bản đầu KhongPhaiAdmin(address), bản thử Error(string) với nội dung Khong phai admin.
+- Không thay thế file trong dự án, không sửa hai file nguồn, không đổi .env và không deploy Sepolia. Frontend hiện cần xem lại thông báo lỗi nếu chuyển sang bản thử; vẫn giữ hạn chế chỉ xem nhận xét sau khi đóng cổng ở tầng ứng dụng.
+
+## Ngày 18/11/2026 — So sánh bản gốc và flattened trong Remix
+
+- Dùng Computer Use tải hai file trong workspace Blockchain/BaoCao của Remix: bản gốc lưu Downloads/DecentralizedEduEvaluation (2).sol, bản flattened lưu Downloads/DecentralizedEduEvaluation_flattened.sol.
+- Diff hai file chỉ khác phần đầu: flattened bỏ SPDX-License-Identifier: MIT, thêm chú thích File: BaoCao/DecentralizedEduEvaluation.sol và dòng trống; không có import.
+- Compile cả hai và file contracts/DecentralizedEduEvaluation.sol trong dự án bằng solc 0.8.28, optimizer 200, EVM paris; tắt metadata để đối chiếu phần mã thực thi. Cả ba có ABI giống nhau (20 hàm public/external), creation bytecode và runtime bytecode giống nhau khi bỏ metadata.
+- Bản gốc Remix so với dự án chỉ thiếu chú thích @title, không thay đổi logic. Bản flattened cảnh báo thiếu SPDX, tương ứng cảnh báo ở file trong ảnh; không có lỗi compile.
+- Không sửa file Solidity, .env, hoặc gửi giao dịch/deploy. Tiếp tục dùng file gốc làm nguồn chỉnh sửa.
+
 ## Ngày 14/11/2026 — Sinh viên xem kết quả sau khi đóng cổng
 
 - Theo yêu cầu mới, dùng chính congDanhGiaDangMo hiện có: cổng mở thì sinh viên không thấy điểm/tổng lượt/nhận xét của các bạn khác; cổng đóng thì xem được. Không có nút hoặc trạng thái công bố riêng, không đổi Solidity/ABI/.env.

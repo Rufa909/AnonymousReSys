@@ -128,6 +128,20 @@ test('nested MetaMask revert data can still be decoded for error messages', () =
   assert.equal(decodedRevertName({ code: 'CALL_EXCEPTION', data: '0x' }, iface), null);
 });
 
+test('B require string reasons have specific Vietnamese messages', () => {
+  const messages = [
+    ['Khong phai admin', /Chỉ ví Admin/],
+    ['Chua duoc cap quyen vao lop', /chưa được cấp quyền/],
+    ['Da danh gia lop', /đã đánh giá/],
+    ['Cong danh gia dang dong', /đang đóng/],
+    ['Nhan xet chi co khoang trang', /ngoài khoảng trắng/],
+    ['Ten hoc phan chi co khoang trang', /Tên học phần không hợp lệ/],
+  ];
+  for (const [reason, expected] of messages) {
+    assert.match(formatWeb3Error({ code: 'CALL_EXCEPTION', revert: { name: 'Error', args: [reason] } }), expected);
+  }
+});
+
 test('student detection stays stable when RPC strips error data for invalid course calls', async () => {
   let strippedCalls = 0;
   const selector = getContractInterface('vietnamese').getFunction('layDiemTrungBinh').selector;

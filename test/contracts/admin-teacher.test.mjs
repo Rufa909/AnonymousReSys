@@ -1,3 +1,4 @@
+import { assertRevertReason } from './revert-reasons.mjs';
 import assert from 'node:assert/strict';
 import { before, beforeEach, after, test } from 'node:test';
 import hre from 'hardhat';
@@ -19,14 +20,8 @@ beforeEach(async () => {
 after(async () => { provider?.destroy(); await connection?.close(); });
 
 async function mined(transaction) { return (await transaction).wait(); }
-async function expectRevert(call, name, args = []) {
-  await assert.rejects(call, error => {
-    assert.equal(error.code, 'CALL_EXCEPTION');
-    const decoded = contract.interface.parseError(error.data);
-    assert.equal(decoded.name, name);
-    assert.deepEqual([...decoded.args], args);
-    return true;
-  });
+async function expectRevert(call, name) {
+  await assert.rejects(call, error => assertRevertReason(contract, error, name));
 }
 function event(receipt, name) {
   return receipt.logs.map(log => contract.interface.parseLog(log)).find(log => log?.name === name);

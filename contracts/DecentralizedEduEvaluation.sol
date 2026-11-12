@@ -4,8 +4,8 @@ pragma solidity 0.8.28;
 /// @title Anonymous ReSys - Admin, Giảng viên và Sinh viên
 /// @notice Lưu điểm 1–5 và nhận xét; không bảo đảm ẩn danh mật mã.
 contract DecentralizedEduEvaluation {
-    // Ví triển khai contract trở thành Admin và không thay đổi được.
-    address public immutable viAdmin;
+    // Ví deploy là Admin; contract hiện không có hàm đổi Admin.
+    address public viAdmin;
 
     struct LopHocPhan {
         string tenHocPhan;
@@ -27,7 +27,6 @@ contract DecentralizedEduEvaluation {
 
     // Danh sách ví thuộc từng lớp, do Admin hoặc giảng viên của lớp cấp quyền.
     mapping(uint256 => mapping(address => bool)) public sinhVienDuocPhep;
-    uint256 public constant GIOI_HAN_CAP_QUYEN = 100;
 
     // Trạng thái tham gia lớp và đánh giá của từng ví.
     // ID lớp => ví sinh viên => trạng thái.
@@ -39,29 +38,8 @@ contract DecentralizedEduEvaluation {
 
     // Nhận xét không gắn địa chỉ ví trong dữ liệu hiển thị của contract.
     // Tuy nhiên giao dịch blockchain công khai vẫn có thể được truy vết.
-    mapping(uint256 => string[]) private nhanXetTheoLop;
+    mapping(uint256 => mapping(uint256 => string)) private nhanXetTheoLop;
 
-    // Giới hạn theo byte UTF-8, không phải số ký tự.
-    uint256 public constant GIOI_HAN_BYTE_TEN_HOC_PHAN = 480;
-    uint256 public constant GIOI_HAN_BYTE_NHAN_XET = 1000;
-
-    // Các lỗi.
-    error KhongPhaiAdmin(address viGoi);
-    error GiangVienChuaDuocDuyet(address viGoi);
-    error DiaChiViKhongHopLe();
-    error GiangVienDaDuocDuyet(address viGiangVien);
-    error TenHocPhanKhongHopLe();
-    error LopKhongTonTai(uint256 maLop);
-    error DaThamGiaLop(uint256 maLop, address viSinhVien);
-    error ChuaThamGiaLop(uint256 maLop, address viSinhVien);
-    error DaDanhGiaLop(uint256 maLop, address viSinhVien);
-    error CongDanhGiaDangDong();
-    error DiemKhongHopLe(uint256 diem);
-    error NhanXetKhongHopLe();
-    error ChiSoNhanXetKhongHopLe(uint256 chiSo);
-    error KhongCoQuyenQuanLyLop(uint256 maLop, address viGoi);
-    error ChuaDuocCapQuyenVaoLop(uint256 maLop, address viSinhVien);
-    error DanhSachViKhongHopLe();
     event DaCapQuyenThamGiaLop(uint256 indexed maLop, address indexed viSinhVien);
 
     // Các sự kiện.
@@ -84,17 +62,13 @@ contract DecentralizedEduEvaluation {
 
     // Chỉ ví Admin được gọi.
     modifier chiAdmin() {
-        if (msg.sender != viAdmin) {
-            revert KhongPhaiAdmin(msg.sender);
-        }
+        require(msg.sender == viAdmin, "Khong phai admin");
         _;
     }
 
     // Chỉ ví giảng viên đã được duyệt được gọi.
     modifier chiGiangVienDaDuyet() {
-        if (!giangVienDaDuyet[msg.sender]) {
-            revert GiangVienChuaDuocDuyet(msg.sender);
-        }
+        require(giangVienDaDuyet[msg.sender], "Giang vien chua duoc duyet");
         _;
     }
 
@@ -104,14 +78,10 @@ contract DecentralizedEduEvaluation {
         chiAdmin
     {
         // Không cho phép địa chỉ zero.
-        if (_viGiangVien == address(0)) {
-            revert DiaChiViKhongHopLe();
-        }
+        require(_viGiangVien != address(0), "Dia chi vi khong hop le");
 
         // Không duyệt lại ví đã được duyệt.
-        if (giangVienDaDuyet[_viGiangVien]) {
-            revert GiangVienDaDuocDuyet(_viGiangVien);
-        }
+        require(!giangVienDaDuyet[_viGiangVien], "Giang vien da duoc duyet");
 
         giangVienDaDuyet[_viGiangVien] = true;
 
@@ -130,29 +100,9 @@ contract DecentralizedEduEvaluation {
         external
         chiGiangVienDaDuyet
     {
-        bytes memory duLieuTen = bytes(_tenHocPhan);
-
-        // Chặn tên rỗng hoặc vượt giới hạn byte.
-        if (
-            duLieuTen.length == 0 ||
-            duLieuTen.length > GIOI_HAN_BYTE_TEN_HOC_PHAN
-        ) {
-            revert TenHocPhanKhongHopLe();
-        }
-
-        // Chặn tên chỉ gồm dấu cách hoặc ký tự điều khiển ASCII.
-        bool coNoiDung;
-
-        for (uint256 i; i < duLieuTen.length; ++i) {
-            if (uint8(duLieuTen[i]) > 32) {
-                coNoiDung = true;
-                break;
-            }
-        }
-
-        if (!coNoiDung) {
-            revert TenHocPhanKhongHopLe();
-        }
+        require(bytes(_tenHocPhan).length > 0, "Ten hoc phan rong");
+        require(bytes(_tenHocPhan).length <= 480, "Ten hoc phan qua dai");
+        require(coNoiDung(_tenHocPhan), "Ten hoc phan chi co khoang trang");
 
         // ID lớp đầu tiên là 0.
         uint256 maLop = tongSoLop;
@@ -177,16 +127,12 @@ contract DecentralizedEduEvaluation {
     /// @notice Cấp quyền theo danh sách đăng ký học đã được xác minh ngoài blockchain.
     function capQuyenThamGiaLop(uint256 _maLop, address[] calldata _danhSachVi) external {
         LopHocPhan storage lop = danhSachLop[_maLop];
-        if (!lop.tonTai) revert LopKhongTonTai(_maLop);
-        if (msg.sender != viAdmin && msg.sender != lop.viGiangVien) {
-            revert KhongCoQuyenQuanLyLop(_maLop, msg.sender);
-        }
-        if (_danhSachVi.length == 0 || _danhSachVi.length > GIOI_HAN_CAP_QUYEN) {
-            revert DanhSachViKhongHopLe();
-        }
+        require(lop.tonTai, "Lop khong ton tai");
+        require(msg.sender == viAdmin || msg.sender == lop.viGiangVien, "Khong co quyen quan ly lop");
+        require(_danhSachVi.length > 0 && _danhSachVi.length <= 100, "Danh sach vi phai co tu 1 den 100 dia chi");
         for (uint256 i; i < _danhSachVi.length; ++i) {
             address viSinhVien = _danhSachVi[i];
-            if (viSinhVien == address(0)) revert DiaChiViKhongHopLe();
+            require(viSinhVien != address(0), "Dia chi vi khong hop le");
             if (!sinhVienDuocPhep[_maLop][viSinhVien]) {
                 sinhVienDuocPhep[_maLop][viSinhVien] = true;
                 emit DaCapQuyenThamGiaLop(_maLop, viSinhVien);
@@ -196,11 +142,9 @@ contract DecentralizedEduEvaluation {
 
     /// @notice Chỉ ví được cấp quyền cho đúng lớp mới có thể tham gia.
     function thamGiaLop(uint256 _maLop) external {
-        if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
-        if (!sinhVienDuocPhep[_maLop][msg.sender]) revert ChuaDuocCapQuyenVaoLop(_maLop, msg.sender);
-        if (sinhVienDaThamGia[_maLop][msg.sender]) {
-            revert DaThamGiaLop(_maLop, msg.sender);
-        }
+        require(danhSachLop[_maLop].tonTai, "Lop khong ton tai");
+        require(sinhVienDuocPhep[_maLop][msg.sender], "Chua duoc cap quyen vao lop");
+        require(!sinhVienDaThamGia[_maLop][msg.sender], "Da tham gia lop");
 
         sinhVienDaThamGia[_maLop][msg.sender] = true;
         emit SinhVienDaVaoLop(_maLop, msg.sender);
@@ -212,45 +156,30 @@ contract DecentralizedEduEvaluation {
         uint256 _diem,
         string calldata _nhanXet
     ) external {
-        if (!congDanhGiaDangMo) revert CongDanhGiaDangDong();
+        require(congDanhGiaDangMo, "Cong danh gia dang dong");
 
         LopHocPhan storage lop = danhSachLop[_maLop];
-        if (!lop.tonTai) revert LopKhongTonTai(_maLop);
-        if (!sinhVienDaThamGia[_maLop][msg.sender]) {
-            revert ChuaThamGiaLop(_maLop, msg.sender);
-        }
-        if (!sinhVienDuocPhep[_maLop][msg.sender]) revert ChuaDuocCapQuyenVaoLop(_maLop, msg.sender);
-        if (sinhVienDaDanhGia[_maLop][msg.sender]) {
-            revert DaDanhGiaLop(_maLop, msg.sender);
-        }
-        if (_diem < 1 || _diem > 5) revert DiemKhongHopLe(_diem);
+        require(lop.tonTai, "Lop khong ton tai");
+        require(sinhVienDaThamGia[_maLop][msg.sender], "Chua tham gia lop");
+        require(sinhVienDuocPhep[_maLop][msg.sender], "Chua duoc cap quyen vao lop");
+        require(!sinhVienDaDanhGia[_maLop][msg.sender], "Da danh gia lop");
+        require(_diem >= 1 && _diem <= 5, "Diem phai tu 1 den 5");
 
-        bytes memory duLieuNhanXet = bytes(_nhanXet);
-        if (
-            duLieuNhanXet.length == 0 ||
-            duLieuNhanXet.length > GIOI_HAN_BYTE_NHAN_XET
-        ) revert NhanXetKhongHopLe();
-
-        bool coNoiDung;
-        for (uint256 i; i < duLieuNhanXet.length; ++i) {
-            if (uint8(duLieuNhanXet[i]) > 32) {
-                coNoiDung = true;
-                break;
-            }
-        }
-        if (!coNoiDung) revert NhanXetKhongHopLe();
+        require(bytes(_nhanXet).length > 0, "Nhan xet rong");
+        require(bytes(_nhanXet).length <= 1000, "Nhan xet qua dai");
+        require(coNoiDung(_nhanXet), "Nhan xet chi co khoang trang");
 
         sinhVienDaDanhGia[_maLop][msg.sender] = true;
         lop.tongDiem += _diem;
+        nhanXetTheoLop[_maLop][lop.soLuotDanhGia] = _nhanXet;
         lop.soLuotDanhGia += 1;
-        nhanXetTheoLop[_maLop].push(_nhanXet);
         emit DaGuiDanhGia(_maLop, _diem);
     }
 
     /// @notice Số nhận xét đã gửi cho một lớp.
     function soNhanXet(uint256 _maLop) external view returns (uint256) {
-        if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
-        return nhanXetTheoLop[_maLop].length;
+        require(danhSachLop[_maLop].tonTai, "Lop khong ton tai");
+        return danhSachLop[_maLop].soLuotDanhGia;
     }
 
     /// @notice Đọc nhận xét theo chỉ số, không trả kèm địa chỉ ví.
@@ -258,18 +187,24 @@ contract DecentralizedEduEvaluation {
         uint256 _maLop,
         uint256 _chiSo
     ) external view returns (string memory) {
-        if (!danhSachLop[_maLop].tonTai) revert LopKhongTonTai(_maLop);
-        if (_chiSo >= nhanXetTheoLop[_maLop].length) {
-            revert ChiSoNhanXetKhongHopLe(_chiSo);
-        }
+        require(danhSachLop[_maLop].tonTai, "Lop khong ton tai");
+        require(_chiSo < danhSachLop[_maLop].soLuotDanhGia, "Chi so nhan xet khong hop le");
         return nhanXetTheoLop[_maLop][_chiSo];
     }
 
     /// @notice Trả điểm trung bình nhân 10, làm tròn xuống (45 nghĩa là 4.5).
     function layDiemTrungBinh(uint256 _maLop) external view returns (uint256) {
         LopHocPhan storage lop = danhSachLop[_maLop];
-        if (!lop.tonTai) revert LopKhongTonTai(_maLop);
+        require(lop.tonTai, "Lop khong ton tai");
         if (lop.soLuotDanhGia == 0) return 0;
         return (lop.tongDiem * 10) / lop.soLuotDanhGia;
+    }
+    // Chặn chuỗi chỉ gồm dấu cách hoặc ký tự điều khiển ASCII.
+    function coNoiDung(string calldata noiDung) private pure returns (bool) {
+        bytes calldata duLieu = bytes(noiDung);
+        for (uint256 i; i < duLieu.length; ++i) {
+            if (uint8(duLieu[i]) > 32) return true;
+        }
+        return false;
     }
 }

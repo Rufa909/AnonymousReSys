@@ -1,3 +1,4 @@
+import { assertRevertReason } from './revert-reasons.mjs';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import hre from 'hardhat';
@@ -43,14 +44,8 @@ async function taoLopHocPhan(name = 'Công nghệ Blockchain') {
   await mined(contract.capQuyenThamGiaLop(0, [await student.getAddress(), await secondStudent.getAddress()]));
 }
 
-async function expectRevert(call, name, args = []) {
-  await assert.rejects(call, error => {
-    assert.equal(error.code, 'CALL_EXCEPTION');
-    const decoded = contract.interface.parseError(error.data);
-    assert.equal(decoded.name, name);
-    assert.deepEqual([...decoded.args], args);
-    return true;
-  });
+async function expectRevert(call, name) {
+  await assert.rejects(call, error => assertRevertReason(contract, error, name));
 }
 
 function event(receipt, name) {
@@ -195,6 +190,24 @@ test('average is zero without reviews and missing courses are rejected', async (
     'LopKhongTonTai',
     [1n],
   );
+});
+
+test('B mapping stores consecutive comments and rejects out-of-range indices', async () => {
+  await taoLopHocPhan();
+  assert.equal(await contract.soNhanXet(0), 0n);
+  await expectRevert(() => contract.layNhanXet.staticCall(0, 0), 'ChiSoNhanXetKhongHopLe');
+  await mined(contract.batTatDanhGia());
+  const comments = ['Bài giảng đầu tiên rất rõ ràng.', 'Cần thêm ví dụ trong phần thực hành.'];
+  for (const [index, actor] of [student, secondStudent].entries()) {
+    await mined(contract.connect(actor).thamGiaLop(0));
+    await mined(contract.connect(actor).guiDanhGia(0, 5 - index, comments[index]));
+  }
+  assert.equal(await contract.soNhanXet(0), 2n);
+  assert.equal((await contract.danhSachLop(0)).soLuotDanhGia, 2n);
+  assert.equal(await contract.layNhanXet(0, 0), comments[0]);
+  assert.equal(await contract.layNhanXet(0, 1), comments[1]);
+  await expectRevert(() => contract.layNhanXet.staticCall(0, 2), 'ChiSoNhanXetKhongHopLe');
+  await expectRevert(() => contract.soNhanXet.staticCall(99), 'LopKhongTonTai');
 });
 
 test('permission is specific to a course and outsiders cannot join or review', async () => {
