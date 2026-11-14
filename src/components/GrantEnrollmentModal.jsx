@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { parseWalletList } from '../web3/enrollment.js';
 
-export default function GrantEnrollmentModal({ course, busy, error, onClose, onSubmit }) {
+export default function GrantEnrollmentModal({ course, busy, error, onClose, onSubmit, demo = false }) {
   const [text, setText] = useState('');
   const [wallets, setWallets] = useState(null);
   const [failure, setFailure] = useState('');
@@ -35,7 +35,7 @@ export default function GrantEnrollmentModal({ course, busy, error, onClose, onS
         {wallets && <div className="grant-preview"><strong>Xác nhận {wallets.length} ví sau khi loại trùng:</strong><ul>{wallets.map(wallet => <li key={wallet}><code>{wallet}</code></li>)}</ul><button className="text-button" type="button" disabled={busy} onClick={() => setWallets(null)}>Sửa danh sách</button></div>}
         {(failure || error) && <p className="form-error" role="alert">{failure || error}</p>}
         {busy && <p role="status">Đang xử lý giao dịch, hãy kiểm tra MetaMask…</p>}
-        <div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>Hủy</button><button className="primary" disabled={busy}>{wallets ? 'Cấp quyền qua MetaMask' : 'Kiểm tra danh sách'}</button></div>
+        <div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>Hủy</button><button className="primary" disabled={busy}>{wallets ? demo ? 'Cấp quyền mô phỏng' : 'Cấp quyền qua MetaMask' : 'Kiểm tra danh sách'}</button></div>
       </form>
     </section>
   </div>;

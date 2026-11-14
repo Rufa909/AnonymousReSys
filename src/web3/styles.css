@@ -6,3 +6,99 @@
 .grant-preview ul { max-height: 180px; overflow: auto; padding-left: 20px; }
 .grant-preview code { overflow-wrap: anywhere; font-size: 12px; }
 .course-comments{margin-top:16px;padding:14px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px}.course-comments>strong{font-size:11px;color:var(--text)}.course-comments ul{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}.course-comments li{padding:9px 11px;background:#fff;border-left:3px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.55;overflow-wrap:anywhere}.course-comments small{display:block;margin-top:9px;color:var(--muted)}.chain-app .character-count{text-align:right;margin-top:5px;color:var(--muted);font-size:10px}
+
+
+
+
+
+
+
+.demo-mode-container .sidebar { overflow-y: auto; }
+.demo-mode-container .sidebar-note { margin-top: 24px; }
+.demo-mode-container .sidebar-note code { overflow-wrap: anywhere; }
+.demo-mode-container .sidebar-note .text-button { display: flex; white-space: normal; text-align: left; margin: 10px 0; }
+.demo-mode-container .role-switch select { margin-bottom: 12px; }
+@media(max-width:760px) {  .comments-pagination .secondary { padding: 9px; } .demo-mode-container .role-switch { display: block; } .demo-mode-container .sidebar { overflow: visible; } }
+.chain-app .header-actions { flex-wrap: wrap; }
+.chain-app .demo-entry { white-space: normal; }
+@media(max-width:760px) { .chain-app .header-actions { gap: 10px; justify-content: flex-end; } .chain-app .demo-entry { font-size: 9px; } }
+.demo-controls { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.demo-controls button { justify-content: flex-start; white-space: normal; text-align: left; padding: 0; }
+.demo-controls details { font-size: 10px; color: var(--muted); }
+.demo-controls summary { cursor: pointer; }
+.demo-controls code { display: block; overflow-wrap: anywhere; user-select: all; font-size: 10px; }
+.chain-app .course-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: stretch; gap: 20px; }
+.chain-app .course-card { display: flex; flex-direction: column; padding: 24px; background: var(--surface); min-width: 0; }
+.chain-app .course-top { margin-bottom: 18px; }
+.chain-app .course-card h3 { font-size: 16px; line-height: 1.5; min-height: 48px; }
+.chain-app .course-card p { font-size: 11px; margin-top: 8px; }
+.chain-app .course-card code { font-size: 10px; }
+.chain-app .course-bottom { margin-top: 20px; padding-top: 16px; font-size: 11px; align-items: center; }
+.chain-app .course-bottom strong { font-size: 15px; color: var(--text); }
+.course-card-footer { margin-top: auto; padding-top: 16px; }
+.course-reviews-link { display: flex; justify-content: space-between; width: 100%; gap: 12px; color: var(--primary); font-weight: 550; font-size: 12px; padding: 10px 0; text-align: left; }
+.course-reviews-link:hover:not(:disabled) { color: var(--primary-hover); }
+.course-card-footer .student-course-actions { margin-top: 12px; padding-top: 16px; }
+.course-card-footer .secondary, .course-card-footer .primary { font-size: 12px; }
+.reviews-workspace { padding: 8px 0 32px; }
+.reviews-back { color: var(--muted); padding: 8px 0; font-size: 12px; margin: 12px 0 24px; }
+.reviews-back span { font-size: 19px; }
+.reviews-back:hover { color: var(--primary); }
+.reviews-heading { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 30px; }
+.reviews-kicker { font-size: 10px; font-weight: 600; letter-spacing: 1.3px; color: var(--primary); margin-bottom: 12px; }
+.reviews-heading h1 { font-size: 29px; line-height: 1.4; overflow-wrap: anywhere; }
+.reviews-heading p { color: var(--muted); margin-top: 10px; font-size: 12px; }
+.reviews-course-id { color: var(--primary); background: var(--primary-soft); border: 1px solid #e0e7ff; border-radius: 8px; padding: 8px 12px; font-size: 12px; white-space: nowrap; margin-top: 30px; }
+.reviews-layout { display: grid; grid-template-columns: 240px minmax(0,1fr); gap: 24px; align-items: start; }
+.reviews-details { display: grid; gap: 18px; }
+.reviews-score, .reviews-course-info, .reviews-content { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.reviews-score { padding: 26px; }
+.reviews-label { font-size: 12px; color: var(--muted); }
+.reviews-score-value { font-size: 48px; font-weight: 650; line-height: 1.2; letter-spacing: -2px; margin: 16px 0; color: var(--text); }
+.reviews-score-value>span { font-size: 17px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
+.reviews-stars { display: flex; gap: 5px; color: #d0d5dd; }
+.reviews-stars .filled { color: #d69c27; }
+.reviews-stars .filled svg { fill: #fef0c7; }
+.reviews-score>p { margin-top: 12px; font-size: 11px; color: var(--muted); }
+.reviews-course-info { padding: 22px; }
+.reviews-course-info h2 { font-size: 13px; }
+.reviews-course-info dl { display: grid; gap: 18px; margin: 22px 0 0; }
+.reviews-course-info dt { color: var(--muted); font-size: 10px; margin-bottom: 6px; }
+.reviews-course-info dd { margin: 0; font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
+.reviews-privacy { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); padding: 0 4px; }
+.reviews-privacy>svg { flex-shrink: 0; color: var(--primary); margin-top: 2px; }
+.reviews-privacy p { font-size: 10px; line-height: 1.8; }
+.reviews-content { min-width: 0; overflow: hidden; }
+.reviews-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 24px 26px; border-bottom: 1px solid var(--border); }
+.reviews-list-heading h2 { font-size: 16px; display: flex; align-items: center; gap: 10px; }
+.reviews-list-heading h2>span { color: var(--primary); background: var(--primary-soft); border-radius: 20px; font-size: 11px; padding: 4px 9px; }
+.reviews-list-heading p { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.reviews-sort { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.reviews-list-body { min-height: 200px; scroll-margin-top: 24px; }
+.reviews-list { list-style: none; margin: 0; padding: 0 26px; }
+.reviews-list li+li { border-top: 1px solid var(--border); }
+.reviews-list article { padding: 24px 0; }
+.review-author { display: flex; align-items: center; gap: 10px; }
+.review-avatar { width: 36px; height: 36px; display: grid; place-items: center; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 50%; color: var(--muted); flex-shrink: 0; }
+.review-author>div { display: grid; gap: 4px; }
+.review-author strong { font-size: 11px; font-weight: 550; }
+.review-author>div>span { font-size: 9px; color: var(--muted); }
+.review-order { margin-left: auto; font-size: 10px; color: var(--muted); }
+.reviews-list article>p { font-size: 13px; line-height: 1.9; color: #344054; margin: 16px 0 0 46px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reviews-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 26px; background: var(--surface-subtle); border-top: 1px solid var(--border); }
+.reviews-pagination>span { color: var(--muted); font-size: 10px; }
+.reviews-pagination>div { display: flex; align-items: center; gap: 12px; }
+.reviews-pagination>div>span { font-size: 11px; color: var(--muted); }
+.reviews-pagination .secondary { padding: 9px 12px; }
+.reviews-empty { text-align: center; padding: 48px 24px; }
+.reviews-empty h3 { font-size: 16px; margin-bottom: 10px; }
+.reviews-empty p { font-size: 12px; color: var(--muted); max-width: 420px; margin: 0 auto 20px; }
+.reviews-loading { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 240px; color: var(--muted); font-size: 12px; }
+.reviews-spinner { width: 20px; height: 20px; border: 2px solid #e0e7ff; border-top-color: var(--primary); border-radius: 50%; animation: reviews-spin .8s linear infinite; }
+@keyframes reviews-spin { to { transform: rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .reviews-spinner { animation: none; } }
+@media(max-width:1050px) { .reviews-layout { grid-template-columns: 1fr; } .reviews-details { grid-template-columns: minmax(180px,.8fr) minmax(0,1.2fr); } .reviews-privacy { grid-column: 1/-1; } }
+@media(max-width:760px) { .chain-app .course-grid { grid-template-columns: 1fr; } .chain-app .course-card { padding: 20px; } .reviews-heading { margin-bottom: 22px; gap: 12px; } .reviews-heading h1 { font-size: 23px; } .reviews-course-id { margin-top: 26px; padding: 6px 8px; } .reviews-details { grid-template-columns: 1fr; } .reviews-score { padding: 22px; } .reviews-list-heading { align-items: flex-start; flex-direction: column; padding: 20px; gap: 10px; } .reviews-list { padding: 0 20px; } .reviews-list article>p { margin-left: 0; } .reviews-pagination { padding: 18px 20px; } .reviews-pagination>div { width: 100%; justify-content: space-between; } }
+.results-waiting { padding: 28px; }
+.results-waiting p { margin: 12px 0 20px; color: var(--muted); }
+.results-waiting-label { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
