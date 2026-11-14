@@ -1,5 +1,26 @@
 # Nhật ký đồ án Anonymous ReSys
 
+## Ngày 14/11/2026 — Dọn nội dung giao diện dành cho người dùng
+
+- Bỏ nhãn WEB3 · GIAI ĐOẠN 3 và các nhãn workspace phụ trên tiêu đề, bỏ mô tả giai đoạn 1 trong hộp thoại ví mẫu.
+- Thay đường dẫn tài liệu thành viên, tên biến cấu hình ABI/.env và mô tả MySQL bằng thông báo phù hợp với người dùng; rút gọn footer, giữ liên kết kiểm tra hợp đồng.
+- Giữ nhãn mô phỏng để phân biệt chế độ trải nghiệm với giao dịch blockchain thật.
+- npm run build thành công; chỉ thay nội dung hiển thị, không thay logic hoặc smart contract.
+
+## Ngày 14/11/2026 — Đổi giao diện sang tông chàm
+
+- Đồng bộ giao diện blockchain và UI demo sang màu chàm #4F46E5, nền #F5F6FA, thẻ trắng, chữ #1F2937 và chữ phụ #667085.
+- Thêm biến màu dùng chung; cập nhật sidebar, nút, bảng, biểu tượng, hộp thoại, danh sách nhận xét và trạng thái focus/hover/disabled. Giữ xanh lá cho trạng thái thành công và kết nối, vàng cho điểm sao/cảnh báo, đỏ cho lỗi.
+- Chỉ thay CSS; không thay logic MetaMask, contract, dữ liệu hoặc cấu hình .env.
+- npm run build thành công; còn cảnh báo bundle trên 500 kB. Chưa kiểm tra trực quan trong trình duyệt.
+
+## Ngày 14/11/2026 — Xác minh địa chỉ contract có nhận xét
+
+- Đọc Sepolia tại block 12133321, kiểm tra địa chỉ tạo từ ví Admin 0x2483e769B6d8f3D035121813998e7151f8bE23C7, nonce 40: 0xcf56964E6594745b21517D4f8F50cCDED87535a9.
+- Runtime có đủ selector ABI tiếng Việt hiện tại, gồm guiDanhGia(uint256,uint256,string), soNhanXet, layNhanXet và phân quyền sinh viên theo lớp. viAdmin đúng ví Admin; số lớp 0, cổng đánh giá đóng tại thời điểm đọc.
+- Cập nhật VITE_CONTRACT_ADDRESS trong .env sang bản mới; giữ ABI vietnamese, chain ID 11155111 và cấu hình MySQL. Không gửi giao dịch hoặc deploy thêm.
+- Cần khởi động lại Vite để dùng cấu hình mới. Contract cũ 0x5935c9Dc8ff901113972e54cD6B8584Ce4E3b92E vẫn giữ dữ liệu riêng, chưa có chức năng nhận xét.
+
 ## Ngày 10/11/2026 — Phân quyền sinh viên theo từng lớp
 
 - Thêm sinhVienDuocPhep và capQuyenThamGiaLop, tối đa 100 ví/giao dịch; chỉ Admin hoặc giảng viên sở hữu lớp được cấp quyền. Kiểm tra quyền trong thamGiaLop và guiDanhGia.
